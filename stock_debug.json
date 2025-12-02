@@ -1,0 +1,660 @@
+{
+  "props": {
+    "pageProps": {
+      "stockData": {
+        "header": {
+          "searchId": "reliance-industries-ltd",
+          "growwCompanyId": "GSTK500325",
+          "isin": "INE002A01018",
+          "industryId": 52,
+          "industryName": "Refineries",
+          "displayName": "Reliance Industries",
+          "shortName": "Reliance Industries",
+          "type": "STOCK",
+          "isFnoEnabled": true,
+          "nseScriptCode": "RELIANCE",
+          "bseScriptCode": "500325",
+          "nseTradingSymbol": "RELIANCE-EQ",
+          "bseTradingSymbol": "RELIANCE",
+          "isBseTradable": true,
+          "isNseTradable": true,
+          "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/RELIANCE.webp",
+          "floatingShares": 3405239713,
+          "isBseFnoEnabled": false,
+          "isNseFnoEnabled": true
+        },
+        "details": {
+          "fullName": "Reliance Industries",
+          "parentCompany": "Reliance Industries",
+          "headquarters": "MUMBAI",
+          "ceo": "Mukesh D. Ambani",
+          "managingDirector": "Mukesh D. Ambani",
+          "businessSummary": "Reliance Industries Limited is a Fortune Global 500 company and the largest private sector company in India. The company's growth mirrors the relentless spirit of dynamism and hope that defines the nation, with its core motto being 'Growth is Life'. Its mission is to be the most admired, innovative, and value-generating organisation for all its stakeholders, operating through growth engines like retail and digital services. As the country's foremost retailer, it operates an integrated network of stores and digital commerce platforms, and as a premier digital provider, it caters to over 480 million subscribers. The company is also a global leader in Oil to Chemicals and a major player in India's Exploration and Production sector, with an upstream portfolio of gas fields. Crucially, its KG-D6 block operations now account for approximately 30% of India's domestic gas production, significantly enhancing the nation's energy security.",
+          "websiteUrl": "https://www.ril.com/"
+        },
+        "brandDtos": [
+          {
+            "name": "Reliance Retail",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Reliance%20Retail/4.%2014457373_2124614317764681_8029853135952480294_n.png"
+          },
+          {
+            "name": "Jio",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Jio/2.%201200px-reliance_jio_logo__28october_2015_29.svg.png"
+          },
+          {
+            "name": "Reliance_fresh.png",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Reliance_fresh.png"
+          },
+          {
+            "name": "Jio.png",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Jio.png"
+          },
+          {
+            "name": "Reliance_Industries.png",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Reliance_Industries.png"
+          },
+          {
+            "name": "Reliance Petrochemicals",
+            "logoUrl": "https://assets-netstorage.groww.in/stock-assets/brand_logo/INE002A01018/Reliance%20Petrochemicals/1.%201200px-reliance_industries_logo.svg.png"
+          }
+        ],
+        "stats": {
+          "marketCap": 2120334.89,
+          "pbRatio": 2.42,
+          "peRatio": 21.76,
+          "divYield": 0.35,
+          "bookValue": 648.2782077,
+          "epsTtm": 71.99,
+          "roe": 9.4731,
+          "industryPe": 19.18098496765894,
+          "cappedType": "Large Cap",
+          "dividendYieldInPercent": 0.35,
+          "faceValue": 10,
+          "debtToEquity": 0.427,
+          "returnOnAssets": 3.7144269637351854,
+          "returnOnEquity": 9.4731,
+          "operatingProfitMargin": 18.44497556027925,
+          "netProfitMargin": 6.809956443705918,
+          "quickRatio": 0.7531926051055892,
+          "cashRatio": 0.2396334360640799,
+          "debtToAsset": 0.1837189410607245,
+          "evToSales": 2.1439223503853886,
+          "evToEbitda": 10.87,
+          "earningsYield": 0.35101058965265625,
+          "sectorPb": 2.1171775341586843,
+          "sectorDivYield": 0.6866850328742855,
+          "sectorRoe": 11.041571989360992,
+          "sectorRoce": 7.9991872120929495,
+          "priceToOcf": 21.393753304409245,
+          "priceToFcf": 35.81,
+          "roic": 9.697200260242822,
+          "pePremiumVsSector": 0.1344568611408401,
+          "pbPremiumVsSector": 0.1430312106356495,
+          "divYieldVsSector": -0.33668503287428553,
+          "currentRatio": 1.3878,
+          "sectorPe": 19.18098496765894,
+          "priceToSales": 2.12,
+          "pegRatio": -0.5093364118895967
+        },
+        "fundamentals": [
+          {
+            "name": "Market Cap",
+            "shortName": "Mkt Cap",
+            "value": "₹21,20,335Cr"
+          },
+          {
+            "name": "ROE",
+            "shortName": "ROE",
+            "value": "9.47%"
+          },
+          {
+            "name": "P/E Ratio(TTM)",
+            "shortName": "P/E Ratio(TTM)",
+            "value": "21.76"
+          },
+          {
+            "name": "EPS(TTM)",
+            "shortName": "EPS(TTM)",
+            "value": "71.99"
+          },
+          {
+            "name": "P/B Ratio",
+            "shortName": "P/B Ratio",
+            "value": "2.42"
+          },
+          {
+            "name": "Dividend Yield",
+            "shortName": "Div Yield",
+            "value": "0.35%"
+          },
+          {
+            "name": "Industry P/E",
+            "shortName": "Industry P/E",
+            "value": "19.18"
+          },
+          {
+            "name": "Book Value",
+            "shortName": "Book Value",
+            "value": "648.28"
+          },
+          {
+            "name": "Debt to Equity",
+            "shortName": "Debt to Equity",
+            "value": "0.43"
+          },
+          {
+            "name": "Face Value",
+            "shortName": "Face Value",
+            "value": "10"
+          }
+        ],
+        "shareHoldingPattern": {
+          "Oct '24": {
+            "promoters": {
+              "individual": {
+                "percent": 50.24
+              },
+              "government": {
+                "percent": 0
+              },
+              "corporation": {
+                "percent": 0
+              }
+            },
+            "mutualFunds": {
+              "percent": 8.5624
+            },
+            "otherDomesticInstitutions": {
+              "insurance": {
+                "percent": 9.752099999999999
+              },
+              "otherFirms": {
+                "percent": 0
+              }
+            },
+            "foreignInstitutions": {
+              "percent": 20.1653
+            },
+            "retailAndOthers": {
+              "percent": 11.280200000000008
+            }
+          },
+          "Dec '24": {
+            "promoters": {
+              "individual": {
+                "percent": 50.135
+              },
+              "government": {
+                "percent": 0
+              },
+              "corporation": {
+                "percent": 0
+              }
+            },
+            "mutualFunds": {
+              "percent": 9.1443
+            },
+            "otherDomesticInstitutions": {
+              "insurance": {
+                "percent": 9.9538
+              },
+              "otherFirms": {
+                "percent": 0
+              }
+            },
+            "foreignInstitutions": {
+              "percent": 19.1548
+            },
+            "retailAndOthers": {
+              "percent": 11.612100000000003
+            }
+          },
+          "Mar '25": {
+            "promoters": {
+              "individual": {
+                "percent": 50.1072
+              },
+              "government": {
+                "percent": 0
+              },
+              "corporation": {
+                "percent": 0
+              }
+            },
+            "mutualFunds": {
+              "percent": 9.2144
+            },
+            "otherDomesticInstitutions": {
+              "insurance": {
+                "percent": 10.240599999999999
+              },
+              "otherFirms": {
+                "percent": 0
+              }
+            },
+            "foreignInstitutions": {
+              "percent": 19.0638
+            },
+            "retailAndOthers": {
+              "percent": 11.374000000000002
+            }
+          },
+          "Jun '25": {
+            "promoters": {
+              "individual": {
+                "percent": 50.0696
+              },
+              "government": {
+                "percent": 0
+              },
+              "corporation": {
+                "percent": 0
+              }
+            },
+            "mutualFunds": {
+              "percent": 9.3174
+            },
+            "otherDomesticInstitutions": {
+              "insurance": {
+                "percent": 10.4844
+              },
+              "otherFirms": {
+                "percent": 0
+              }
+            },
+            "foreignInstitutions": {
+              "percent": 19.2063
+            },
+            "retailAndOthers": {
+              "percent": 10.922300000000002
+            }
+          },
+          "Sep '25": {
+            "promoters": {
+              "individual": {
+                "percent": 50.0106
+              },
+              "government": {
+                "percent": 0
+              },
+              "corporation": {
+                "percent": 0
+              }
+            },
+            "mutualFunds": {
+              "percent": 9.6612
+            },
+            "otherDomesticInstitutions": {
+              "insurance": {
+                "percent": 10.670600000000002
+              },
+              "otherFirms": {
+                "percent": 0
+              }
+            },
+            "foreignInstitutions": {
+              "percent": 18.6479
+            },
+            "retailAndOthers": {
+              "percent": 11.009700000000008
+            }
+          }
+        },
+        "fundsInvested": [
+          {
+            "name": "Quant Small Cap Fund Direct Plan Growth",
+            "searchId": "quant-small-cap-fund-direct-plan-growth",
+            "investedAumPercent": 9.529058,
+            "rating": 4,
+            "return3y": 22.99,
+            "return1y": -4.05,
+            "return5y": 33.24,
+            "logoUrl": "https://assets-netstorage.groww.in/mf-assets/logos/escorts_groww.png"
+          },
+          {
+            "name": "Quant ELSS Tax Saver Fund Direct Growth",
+            "searchId": "quant-elss-tax-saver-fund-direct-growth",
+            "investedAumPercent": 9.342141,
+            "rating": 3,
+            "return3y": 15.72,
+            "return1y": 4.35,
+            "return5y": 27,
+            "logoUrl": "https://assets-netstorage.groww.in/mf-assets/logos/escorts_groww.png"
+          },
+          {
+            "name": "SBI Infrastructure Fund Direct Growth",
+            "searchId": "sbi-infrastructure-fund-direct-growth",
+            "investedAumPercent": 9,
+            "rating": 3,
+            "return3y": 21.96,
+            "return1y": -0.87,
+            "return5y": 26.36,
+            "logoUrl": "https://assets-netstorage.groww.in/mf-assets/logos/sbi_groww.png"
+          },
+          {
+            "name": "Sundaram Equity Savings Fund Direct Growth",
+            "searchId": "sundaram-equity-savings-fund-direct-growth",
+            "investedAumPercent": 8.699843,
+            "rating": 3,
+            "return3y": 12.95,
+            "return1y": 8.91,
+            "return5y": 12.57,
+            "logoUrl": "https://assets-netstorage.groww.in/mf-assets/logos/sundaram_groww.png"
+          }
+        ],
+        "priceData": {
+          "nse": {
+            "yearLowPrice": 1114.85,
+            "yearHighPrice": 1581.3,
+            "close": 1567.5,
+            "dayChange": -1.400000000000091,
+            "dayChangePerc": -0.08931419457735827,
+            "high": 1577.5,
+            "highPriceRange": 1724.2,
+            "highTradeRange": null,
+            "lastTradeQty": 13,
+            "lastTradeTime": 1764584898,
+            "low": 1563.6,
+            "lowPriceRange": 1410.8,
+            "lowTradeRange": null,
+            "ltp": 1566.1,
+            "oiDayChange": 0,
+            "oiDayChangePerc": 0,
+            "open": 1575,
+            "openInterest": null,
+            "prevOpenInterest": null,
+            "symbol": "RELIANCE",
+            "totalBuyQty": 4498,
+            "totalSellQty": 0,
+            "tsInMillis": 1764584912,
+            "volume": 8920233,
+            "type": "LIVE_PRICE"
+          },
+          "bse": {
+            "yearLowPrice": 1115.55,
+            "yearHighPrice": 1580.9
+          }
+        },
+        "financialStatement": [
+          {
+            "title": "Revenue",
+            "yearly": {
+              "2021": 483251,
+              "2022": 710906,
+              "2023": 889569,
+              "2024": 917121,
+              "2025": 982671
+            },
+            "quarterly": {
+              "Sep '24": 262903,
+              "Dec '24": 271400,
+              "Mar '25": 293043,
+              "Jun '25": 288371,
+              "Sep '25": 288030
+            }
+          },
+          {
+            "title": "Profit",
+            "yearly": {
+              "2021": 53739,
+              "2022": 66184,
+              "2023": 73670,
+              "2024": 78633,
+              "2025": 80787
+            },
+            "quarterly": {
+              "Sep '24": 19101,
+              "Dec '24": 21804,
+              "Mar '25": 22434,
+              "Jun '25": 30681,
+              "Sep '25": 22146
+            }
+          },
+          {
+            "title": "Net Worth",
+            "yearly": {
+              "2021": 799432,
+              "2022": 888984,
+              "2023": 828881,
+              "2024": 925788,
+              "2025": 1009626
+            }
+          }
+        ],
+        "similarAssets": {
+          "type": "STOCK",
+          "size": 8,
+          "peerList": [
+            {
+              "companyHeader": {
+                "searchId": "indian-oil-corporation-ltd",
+                "growwCompanyId": "GSTK530965",
+                "isin": "INE242A01010",
+                "industryId": 52,
+                "displayName": "Indian Oil Corporation",
+                "shortName": "IOCL",
+                "nseScriptCode": "IOC",
+                "bseScriptCode": "530965",
+                "nseTradingSymbol": "IOC-EQ",
+                "bseTradingSymbol": "IOC",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/IOC.webp",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": true
+              },
+              "nseYearLow": 110.72,
+              "nseYearHigh": 174.5,
+              "bseYearLow": 110.75,
+              "bseYearHigh": 174.45,
+              "marketCap": 228411.03,
+              "peRatio": 8.95,
+              "pbRatio": 1.16
+            },
+            {
+              "companyHeader": {
+                "searchId": "bharat-petroleum-corporation-ltd",
+                "growwCompanyId": "GSTK500547",
+                "isin": "INE029A01011",
+                "industryId": 52,
+                "displayName": "Bharat Petroleum Corporation",
+                "shortName": "BPCL",
+                "nseScriptCode": "BPCL",
+                "bseScriptCode": "500547",
+                "nseTradingSymbol": "BPCL-EQ",
+                "bseTradingSymbol": "BPCL",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/BPCL.webp",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": true
+              },
+              "nseYearLow": 234.01,
+              "nseYearHigh": 381.55,
+              "bseYearLow": 234.15,
+              "bseYearHigh": 381.6,
+              "marketCap": 155752.35,
+              "peRatio": 7.34,
+              "pbRatio": 1.66
+            },
+            {
+              "companyHeader": {
+                "searchId": "hindustan-petroleum-corporation-ltd",
+                "growwCompanyId": "GSTK500104",
+                "isin": "INE094A01015",
+                "industryId": 52,
+                "displayName": "Hindustan Petroleum Corporation",
+                "shortName": "HPCL",
+                "nseScriptCode": "HINDPETRO",
+                "bseScriptCode": "500104",
+                "nseTradingSymbol": "HINDPETRO-EQ",
+                "bseTradingSymbol": "HINDPETRO",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/HINDPETRO.webp",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": true
+              },
+              "nseYearLow": 287.55,
+              "nseYearHigh": 494.45,
+              "bseYearLow": 287.55,
+              "bseYearHigh": 494.55,
+              "marketCap": 97358.52,
+              "peRatio": 6.99,
+              "pbRatio": 1.71
+            },
+            {
+              "companyHeader": {
+                "searchId": "mangalore-refinery-petrochemicals-ltd",
+                "growwCompanyId": "GSTK500109",
+                "isin": "INE103A01014",
+                "industryId": 52,
+                "displayName": "Mangalore Refinery And Petrochemicals",
+                "shortName": "MRPL",
+                "nseScriptCode": "MRPL",
+                "bseScriptCode": "500109",
+                "nseTradingSymbol": "MRPL-EQ",
+                "bseTradingSymbol": "MRPL",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/MRPL.webp",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": false
+              },
+              "nseYearLow": 98.92,
+              "nseYearHigh": 185,
+              "bseYearLow": 98.95,
+              "bseYearHigh": 185,
+              "marketCap": 27664.77,
+              "peRatio": 26.71,
+              "pbRatio": 2.08
+            },
+            {
+              "companyHeader": {
+                "searchId": "chennai-petroleum-corporation-ltd",
+                "growwCompanyId": "GSTK500110",
+                "isin": "INE178A01016",
+                "industryId": 52,
+                "displayName": "Chennai Petroleum Corporation",
+                "shortName": "Chennai Petro Corp",
+                "nseScriptCode": "CHENNPETRO",
+                "bseScriptCode": "500110",
+                "nseTradingSymbol": "CHENNPETRO-EQ",
+                "bseTradingSymbol": "CHENNPETRO",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/CHENNPETRO.webp",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": false
+              },
+              "nseYearLow": 433.1,
+              "nseYearHigh": 1103,
+              "bseYearLow": 433.2,
+              "bseYearHigh": 1103,
+              "marketCap": 13643.26,
+              "peRatio": 11.66,
+              "pbRatio": 1.55
+            },
+            {
+              "companyHeader": {
+                "searchId": "gandhar-oil-refinery-india-ltd",
+                "growwCompanyId": "GSTK544029",
+                "isin": "INE717W01049",
+                "industryId": 52,
+                "displayName": "Gandhar Oil Refinery (India)",
+                "shortName": "Gandhar Oil Refinery",
+                "nseScriptCode": "GANDHAR",
+                "bseScriptCode": "544029",
+                "nseTradingSymbol": "GANDHAR-EQ",
+                "bseTradingSymbol": "GANDHAR",
+                "isBseTradable": true,
+                "isNseTradable": true,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/GandharOilRefineryIndiaLtd_37404581_38912.png",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": false
+              },
+              "nseYearLow": 128.48,
+              "nseYearHigh": 244.4,
+              "bseYearLow": 128.3,
+              "bseYearHigh": 244.55,
+              "marketCap": 1280.75,
+              "peRatio": 12.99,
+              "pbRatio": 0.99
+            },
+            {
+              "companyHeader": {
+                "searchId": "resgen-ltd",
+                "growwCompanyId": "GSTK543805",
+                "isin": "INE0NYN01016",
+                "industryId": 52,
+                "displayName": "RESGEN",
+                "shortName": "RESGEN",
+                "bseScriptCode": "543805",
+                "bseTradingSymbol": "RESGEN",
+                "isBseTradable": true,
+                "isNseTradable": false,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/ResgenLtd_72076984_78345.png",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": false
+              },
+              "nseYearLow": 0,
+              "nseYearHigh": 0,
+              "bseYearLow": 67.01,
+              "bseYearHigh": 135.9,
+              "marketCap": 151.02,
+              "peRatio": 18.95,
+              "pbRatio": 2.62
+            },
+            {
+              "companyHeader": {
+                "searchId": "cals-refineries-ltd",
+                "growwCompanyId": "GSTK526652",
+                "isin": "INE040C01022",
+                "industryId": 52,
+                "displayName": "Cals Refineries",
+                "shortName": "Cals Refineries",
+                "bseScriptCode": "526652",
+                "bseTradingSymbol": "CALSREF",
+                "isBseTradable": true,
+                "isNseTradable": false,
+                "logoUrl": "https://assets-netstorage.groww.in/stock-assets/logos2/CalsRefineries_75522570194_4312.png",
+                "isBseFnoEnabled": false,
+                "isNseFnoEnabled": false
+              },
+              "marketCap": 82.94,
+              "peRatio": 0,
+              "pbRatio": 0
+            }
+          ]
+        }
+      },
+      "isCorrectData": true,
+      "isStockSipEnabled": true
+    }
+  },
+  "page": "/stocks/[company-search-id]",
+  "query": {
+    "company-search-id": "reliance-industries-ltd"
+  },
+  "buildId": "QRCg9krBPjZcNkkBavJKk",
+  "assetPrefix": "//assets-netstorage.groww.in/web-assets/billion_groww_desktop/prod",
+  "isFallback": false,
+  "gip": true,
+  "scriptLoader": [
+    {
+      "nonce": "QreSZQvLequtvqrkIQmyNgvhcmQDZxP4ykj6JQynEHA=",
+      "strategy": "afterInteractive",
+      "id": "_webengage_script_tag",
+      "dangerouslySetInnerHTML": {
+        "__html": " var webengage;!function(w,e,b,n,g){function o(e,t){e[t[t.length-1]]=function(){r.__queue.push([t.join(\".\"),\n          arguments])}}var i,s,r=w[b],z=\" \",l=\"init options track screen onReady\".split(z),a=\"feedback survey notification\".split(z),c=\"options render clear abort\".split(z),p=\"Open Close Submit Complete View Click\".split(z),u=\"identify login logout setAttribute\".split(z);if(!r||!r.__v){for(w[b]=r={__queue:[],__v:\"6.0\",user:{}},i=0;i < l.length;i++)o(r,[l[i]]);for(i=0;i < a.length;i++){for(r[a[i]]={},s=0;s < c.length;s++)o(r[a[i]],[a[i],c[s]]);for(s=0;s < p.length;s++)o(r[a[i]],[a[i],\"on\"+p[s]])}for(i=0;i < u.length;i++)o(r.user,[\"user\",u[i]]);setTimeout(function(){var f=e.createElement(\"script\"),d=e.getElementById(\"_webengage_script_tag\");f.type=\"text/javascript\",f.async=!0,f.src=(\"https:\"==e.location.protocol?\"https://widgets.in.webengage.com\":\"http://widgets.in.webengage.com\")+\"/js/webengage-min-v-6.0.js\",d.parentNode.insertBefore(f,d)})}}(window,document,\"webengage\");\n          window.webengage.init(\"in~76aa392\");\n          "
+      }
+    },
+    {
+      "nonce": "QreSZQvLequtvqrkIQmyNgvhcmQDZxP4ykj6JQynEHA=",
+      "strategy": "afterInteractive",
+      "dangerouslySetInnerHTML": {
+        "__html": "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=!0;j.src='https://www.googletagmanager.com/gtm.js?refresh=1&id='+i+dl;f.parentNode.insertBefore(j,f)})(window,document,'script','dataLayer','GTM-T7VTWPR')"
+      }
+    }
+  ]
+}

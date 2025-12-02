@@ -1,0 +1,15 @@
+Keys: ["scheme_code","portfolio_date","company_name","nature_name","sector_name","instrument_name","rating","market_value","corpus_per","market_cap","rating_market_cap","stock_search_id"]
+Item: {
+  "scheme_code": "152557",
+  "portfolio_date": "2025-10-30T18:30:00.000Z",
+  "company_name": "Mahindra & Mahindra Ltd.",
+  "nature_name": "EQ",
+  "sector_name": "Automobile",
+  "instrument_name": "Equity",
+  "rating": null,
+  "market_value": 24.016,
+  "corpus_per": 24.49,
+  "market_cap": null,
+  "rating_market_cap": null,
+  "stock_search_id": "mahindra-mahindra-ltd"
+}

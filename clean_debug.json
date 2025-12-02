@@ -1,0 +1,920 @@
+[
+  {
+    "name": "Reliance Industries Ltd.",
+    "sector": "Energy",
+    "allocation": "9.53",
+    "return1y": "23.79",
+    "return3y": "44.17",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "JIO Financial Services Ltd.",
+    "sector": "Financial",
+    "allocation": "6.08",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "RBL Bank Ltd.",
+    "sector": "Financial",
+    "allocation": "4.06",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Aegis Logistics Ltd.",
+    "sector": "Services",
+    "allocation": "3.24",
+    "return1y": "9.66",
+    "return3y": "101.23",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Adani Power Ltd.",
+    "sector": "Energy",
+    "allocation": "3.13",
+    "return1y": "43.55",
+    "return3y": "229.18",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Anand Rathi Wealth Ltd.",
+    "sector": "Financial",
+    "allocation": "2.61",
+    "return1y": "59.73",
+    "return3y": "602.68",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Aster DM Healthcare Ltd.",
+    "sector": "Healthcare",
+    "allocation": "2.51",
+    "return1y": "36.23",
+    "return3y": "214.98",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Bikaji Foods International Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "2.20",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Poly Medicure Ltd.",
+    "sector": "Healthcare",
+    "allocation": "2.16",
+    "return1y": "-17.16",
+    "return3y": "115.79",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Ventive Hospitality Ltd.",
+    "sector": "Services",
+    "allocation": "2.01",
+    "return1y": "0.12",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Adani Enterprises Ltd.",
+    "sector": "Services",
+    "allocation": "2.01",
+    "return1y": "-1.20",
+    "return3y": "-23.95",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Sun TV Network Ltd.",
+    "sector": "Services",
+    "allocation": "1.90",
+    "return1y": "-10.51",
+    "return3y": "19.72",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Capri Global Capital Ltd.",
+    "sector": "Financial",
+    "allocation": "1.89",
+    "return1y": "6.82",
+    "return3y": "-73.25",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "HFCL Ltd.",
+    "sector": "Communication",
+    "allocation": "1.82",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "NBCC (India) Ltd.",
+    "sector": "Construction",
+    "allocation": "1.65",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Usha Martin Ltd.",
+    "sector": "Metals & Mining",
+    "allocation": "1.63",
+    "return1y": "23.68",
+    "return3y": "127.58",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Piramal Finance Ltd.",
+    "sector": "Financial",
+    "allocation": "1.60",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Sequent Scientific Ltd.",
+    "sector": "Healthcare",
+    "allocation": "1.58",
+    "return1y": "34.05",
+    "return3y": "182.75",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Bayer CropScience Ltd.",
+    "sector": "Chemicals",
+    "allocation": "1.58",
+    "return1y": "-10.06",
+    "return3y": "3.15",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Oil And Natural Gas Corporation Ltd.",
+    "sector": "Energy",
+    "allocation": "1.54",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Pfizer Ltd.",
+    "sector": "Healthcare",
+    "allocation": "1.49",
+    "return1y": "9.44",
+    "return3y": "28.36",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Arvind Ltd.",
+    "sector": "Textiles",
+    "allocation": "1.48",
+    "return1y": "2.00",
+    "return3y": "307.39",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Zydus Wellness Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "1.41",
+    "return1y": "17.26",
+    "return3y": "53.34",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Aditya Birla Lifestyle Brands Ltd.",
+    "sector": "Services",
+    "allocation": "1.41",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Welspun Corp Ltd.",
+    "sector": "Metals & Mining",
+    "allocation": "1.37",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Minda Corporation Ltd.",
+    "sector": "Automobile",
+    "allocation": "1.35",
+    "return1y": "1.10",
+    "return3y": "170.54",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Welspun Enterprises Ltd.",
+    "sector": "Construction",
+    "allocation": "1.23",
+    "return1y": "-14.65",
+    "return3y": "255.26",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Keystone Realtors Ltd",
+    "sector": "Construction",
+    "allocation": "1.15",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "NCC Ltd.",
+    "sector": "Construction",
+    "allocation": "1.09",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Marathon Nextgen Realty Ltd.",
+    "sector": "Construction",
+    "allocation": "1.08",
+    "return1y": "2.54",
+    "return3y": "131.76",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Jubilant Pharmova Ltd.",
+    "sector": "Healthcare",
+    "allocation": "1.06",
+    "return1y": "13.83",
+    "return3y": "214.94",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Strides Pharma Science Ltd.",
+    "sector": "Healthcare",
+    "allocation": "1.02",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Afcons Infrastructure Ltd.",
+    "sector": "Construction",
+    "allocation": "0.98",
+    "return1y": "-13.42",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "E.I.D. - Parry (India) Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "0.96",
+    "return1y": "23.94",
+    "return3y": "87.51",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Just Dial Ltd.",
+    "sector": "Services",
+    "allocation": "0.96",
+    "return1y": "-17.25",
+    "return3y": "16.82",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "JM Financial Ltd.",
+    "sector": "Financial",
+    "allocation": "0.90",
+    "return1y": "40.65",
+    "return3y": "136.65",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Gland Pharma Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.87",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "The Karnataka Bank Ltd.",
+    "sector": "Financial",
+    "allocation": "0.86",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Anthem Biosciences Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.86",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Orchid Pharma Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.83",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Samvardhana Motherson International Ltd.",
+    "sector": "Automobile",
+    "allocation": "0.79",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Bata India Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "0.64",
+    "return1y": "-24.89",
+    "return3y": "-36.31",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Juniper Hotels Ltd.",
+    "sector": "Services",
+    "allocation": "0.54",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Apeejay Surrendra Park Hotels Ltd.",
+    "sector": "Services",
+    "allocation": "0.53",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "EPL Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.52",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "TVS Srichakra Ltd.",
+    "sector": "Automobile",
+    "allocation": "0.52",
+    "return1y": "51.63",
+    "return3y": "43.33",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Welspun Living Ltd.",
+    "sector": "Consumer Discretionary",
+    "allocation": "0.52",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Delhivery Ltd.",
+    "sector": "Services",
+    "allocation": "0.51",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Aditya Birla Fashion and Retail Ltd.",
+    "sector": "Services",
+    "allocation": "0.48",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Gujarat State Fertilizers & Chemicals Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.48",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "K.P.R. Mill Ltd.",
+    "sector": "Textiles",
+    "allocation": "0.46",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Aarti Industries Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.45",
+    "return1y": "-14.45",
+    "return3y": "-29.28",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Indoco Remedies Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.38",
+    "return1y": "4.06",
+    "return3y": "-21.08",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Aptus Value Housing Finance India Ltd.",
+    "sector": "Financial",
+    "allocation": "0.38",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Alivus Life Sciences Ltd",
+    "sector": "Healthcare",
+    "allocation": "0.37",
+    "return1y": "-24.63",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Oswal Pumps Ltd.",
+    "sector": "Capital Goods",
+    "allocation": "0.35",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Sula Vineyards Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "0.35",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Suven Life Sciences Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.30",
+    "return1y": "34.01",
+    "return3y": "179.16",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Nitin Spinners Ltd.",
+    "sector": "Textiles",
+    "allocation": "0.30",
+    "return1y": "-21.39",
+    "return3y": "58.16",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Man Infraconstruction Ltd.",
+    "sector": "Construction",
+    "allocation": "0.29",
+    "return1y": "-33.85",
+    "return3y": "81.36",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "India Shelter Finance Corporation Ltd.",
+    "sector": "Financial",
+    "allocation": "0.29",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Balrampur Chini Mills Ltd.",
+    "sector": "Consumer Staples",
+    "allocation": "0.29",
+    "return1y": "-8.26",
+    "return3y": "18.35",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Rishabh Instruments Ltd.",
+    "sector": "Capital Goods",
+    "allocation": "0.25",
+    "return1y": "43.67",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "BASF India Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.25",
+    "return1y": "-10.79",
+    "return3y": "68.76",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Embassy Developments Ltd.",
+    "sector": "Construction",
+    "allocation": "0.24",
+    "return1y": "-47.48",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Maharashtra Seamless Ltd.",
+    "sector": "Metals & Mining",
+    "allocation": "0.24",
+    "return1y": "-4.97",
+    "return3y": "85.14",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Life Insurance Corporation of India",
+    "sector": "Insurance",
+    "allocation": "0.22",
+    "return1y": "4.36",
+    "return3y": "34.99",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Castrol India Ltd.",
+    "sector": "Energy",
+    "allocation": "0.20",
+    "return1y": "7.72",
+    "return3y": "62.16",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Exicom Tele-Systems Ltd.",
+    "sector": "Energy",
+    "allocation": "0.20",
+    "return1y": "-55.59",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Vinati Organics Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.20",
+    "return1y": "-6.32",
+    "return3y": "-14.41",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Capacit'e Infraprojects Ltd.",
+    "sector": "Construction",
+    "allocation": "0.19",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Orissa Minerals Development Company Ltd.",
+    "sector": "Metals & Mining",
+    "allocation": "0.19",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Intellect Design Arena Ltd.",
+    "sector": "Technology",
+    "allocation": "0.19",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "SMS Pharmaceuticals Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.17",
+    "return1y": "55.60",
+    "return3y": "312.14",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Newgen Software Technologies Ltd.",
+    "sector": "Technology",
+    "allocation": "0.16",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Prime Securities Ltd.",
+    "sector": "Financial",
+    "allocation": "0.16",
+    "return1y": "11.35",
+    "return3y": "197.37",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Anupam Rasayan India Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.15",
+    "return1y": "78.67",
+    "return3y": "108.20",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Vishnu Prakash R Punglia Ltd.",
+    "sector": "Construction",
+    "allocation": "0.15",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Indraprastha Medical Corporation Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.14",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Oriental Hotels Ltd.",
+    "sector": "Services",
+    "allocation": "0.13",
+    "return1y": "-22.84",
+    "return3y": "70.21",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Sai Silks (Kalamandir) Ltd.",
+    "sector": "Textiles",
+    "allocation": "0.13",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Vardhman Textiles Ltd.",
+    "sector": "Textiles",
+    "allocation": "0.12",
+    "return1y": "-5.79",
+    "return3y": "41.84",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "NCC Ltd.",
+    "sector": "Construction",
+    "allocation": "0.12",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.11",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Mahindra Holidays & Resorts India Ltd.",
+    "sector": "Services",
+    "allocation": "0.11",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Himadri Speciality Chemical Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.11",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Sanofi India Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.10",
+    "return1y": "-21.09",
+    "return3y": "-20.63",
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.10",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Indian Hume Pipe Company Ltd.",
+    "sector": "Construction",
+    "allocation": "0.09",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Digitide Solutions Ltd.",
+    "sector": "Services",
+    "allocation": "0.09",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.08",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Ethos Ltd.",
+    "sector": "Services",
+    "allocation": "0.08",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.08",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.07",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.07",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Stanley Lifestyles Ltd.",
+    "sector": "Consumer Discretionary",
+    "allocation": "0.06",
+    "return1y": "-31.81",
+    "return3y": null,
+    "return1m": null,
+    "isReal": true
+  },
+  {
+    "name": "Best Agrolife Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.05",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Primo Chemicals Ltd.",
+    "sector": "Chemicals",
+    "allocation": "0.03",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Reserve Bank of India",
+    "sector": "Financial",
+    "allocation": "0.03",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Onesource Specialty Pharma Ltd.",
+    "sector": "Healthcare",
+    "allocation": "0.01",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Om Infra Ltd.",
+    "sector": "Construction",
+    "allocation": "0.01",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  },
+  {
+    "name": "Quant Gilt Fund Direct - Growth",
+    "sector": "Equity",
+    "allocation": "0.00",
+    "return1y": null,
+    "return3y": null,
+    "return1m": null,
+    "isReal": false
+  }
+]

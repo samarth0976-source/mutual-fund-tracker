@@ -1,0 +1,5 @@
+{
+  "message": "Call `const yahooFinance = new YahooFinance()` first.  Upgrading from v2?  See https://github.com/gadicc/yahoo-finance2/blob/dev/docs/UPGRADING.md.",
+  "stack": "Error: Call `const yahooFinance = new YahooFinance()` first.  Upgrading from v2?  See https://github.com/gadicc/yahoo-finance2/blob/dev/docs/UPGRADING.md.\n    at YahooFinance.historical (file:///C:/Users/samar/.gemini/antigravity/scratch/mutual_fund_tracker/node_modules/yahoo-finance2/esm/src/createYahooFinance.js:158:19)\n    at testYahoo (file:///C:/Users/samar/.gemini/antigravity/scratch/mutual_fund_tracker/debug_yahoo.js:7:43)\n    at file:///C:/Users/samar/.gemini/antigravity/scratch/mutual_fund_tracker/debug_yahoo.js:22:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:345:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:651:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)",
+  "name": "Error"
+}
