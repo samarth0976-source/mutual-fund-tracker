@@ -56,9 +56,9 @@ const PaymentStatus = () => {
             }, 1000);
             return () => clearTimeout(timer);
         } else if (status === 'success' && countdown === 0) {
-            navigate('');
+            window.location.href = 'https://mutual-fund-tracker-one.vercel.app/';
         }
-    }, [status, countdown, navigate]);
+    }, [status, countdown]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
