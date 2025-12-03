@@ -108,7 +108,7 @@ const PaymentPage = () => {
 
                         <div className="mt-8">
                             <div className="flex items-center justify-between mb-4">
-                                <span className="text-2xl font-bold text-gray-900">₹1.00<span className="text-sm text-gray-500 font-normal">/month</span></span>
+                                <span className="text-2xl font-bold text-gray-900">₹50<span className="text-sm text-gray-500 font-normal">/month</span></span>
                             </div>
 
                             {error && (

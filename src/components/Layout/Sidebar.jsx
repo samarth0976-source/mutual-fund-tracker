@@ -46,6 +46,28 @@ const Sidebar = () => {
                 ))}
             </nav>
 
+            <div className="px-4 pb-4 space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-semibold text-muted uppercase tracking-wider px-4 mb-2">Legal</p>
+                <NavLink
+                    to="/contact"
+                    className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted hover:bg-white/5 hover:text-white transition-all duration-300"
+                >
+                    Contact Us
+                </NavLink>
+                <NavLink
+                    to="/terms"
+                    className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted hover:bg-white/5 hover:text-white transition-all duration-300"
+                >
+                    Terms & Conditions
+                </NavLink>
+                <NavLink
+                    to="/refunds"
+                    className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted hover:bg-white/5 hover:text-white transition-all duration-300"
+                >
+                    Refunds & Cancellations
+                </NavLink>
+            </div>
+
             <div className="p-4 border-t border-border">
                 <button
                     onClick={handleLogout}

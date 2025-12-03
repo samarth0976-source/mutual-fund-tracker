@@ -12,6 +12,9 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import PaymentPage from './pages/PaymentPage';
 import PaymentStatus from './pages/PaymentStatus';
+import Contact from './pages/Contact';
+import Terms from './pages/Terms';
+import Refunds from './pages/Refunds';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-8 text-white">
@@ -100,6 +103,30 @@ function App() {
             <ProtectedRoute>
               <AuthenticatedLayout>
                 <PlaceholderPage title="Settings" />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/contact" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout>
+                <Contact />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/terms" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout>
+                <Terms />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/refunds" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout>
+                <Refunds />
               </AuthenticatedLayout>
             </ProtectedRoute>
           } />

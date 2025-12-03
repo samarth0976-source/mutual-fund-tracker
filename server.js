@@ -405,6 +405,31 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Helper to check and update subscription status
+const checkAndUpdateSubscription = async (user) => {
+    if (!user.isPro || !user.subscriptionExpiry) {
+        return user;
+    }
+
+    const now = new Date();
+    const expiryDate = new Date(user.subscriptionExpiry);
+    const gracePeriodEnd = new Date(expiryDate.getTime() + 24 * 60 * 60 * 1000); // +24 hours
+
+    // If past grace period, downgrade to free
+    if (now > gracePeriodEnd) {
+        const users = await readUsers();
+        const userIndex = users.findIndex(u => u.id === user.id);
+        if (userIndex !== -1) {
+            users[userIndex].isPro = false;
+            users[userIndex].subscriptionExpiry = null;
+            await writeUsers(users);
+            return users[userIndex];
+        }
+    }
+
+    return user;
+};
+
 app.get('/api/auth/user', authenticateToken, async (req, res) => {
     const users = await readUsers();
     const user = users.find(u => u.id === req.user.id);
@@ -568,6 +593,84 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error("Error verifying payment:", error.message);
         res.status(500).json({ error: "Verification failed" });
+    }
+});
+
+// Renewal endpoint
+app.post('/api/payment/renew', authenticateToken, async (req, res) => {
+    try {
+        const orderId = `RENEW_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+        const requestPayload = {
+            order_amount: 50.00,
+            order_currency: "INR",
+            order_id: orderId,
+            customer_details: {
+                customer_id: req.user.id,
+                customer_phone: "9999999999",
+                customer_name: req.user.username,
+                customer_email: req.user.email
+            },
+            order_meta: {
+                return_url: `https://www.cashfree.com/devstudio/preview/pg/web/popupCheckout?order_id=${orderId}`
+            }
+        };
+
+        const postData = JSON.stringify(requestPayload);
+
+        const options = {
+            hostname: 'api.cashfree.com',
+            port: 443,
+            path: '/pg/orders',
+            method: 'POST',
+            headers: {
+                'x-client-id': CASHFREE_APP_ID.trim(),
+                'x-client-secret': CASHFREE_SECRET.trim(),
+                'x-api-version': '2025-01-01',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        };
+
+        console.log("Creating Cashfree renewal order...");
+
+        const cashfreeRequest = https.request(options, (cashfreeRes) => {
+            let data = '';
+
+            cashfreeRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            cashfreeRes.on('end', () => {
+                try {
+                    const responseData = JSON.parse(data);
+
+                    if (cashfreeRes.statusCode === 200) {
+                        console.log("Renewal Order Created Successfully");
+                        res.json(responseData);
+                    } else {
+                        console.error("Cashfree Error:", responseData);
+                        res.status(cashfreeRes.statusCode).json({ error: responseData.message || "Failed to create renewal order" });
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing response:", parseError);
+                    res.status(500).json({ error: "Invalid response from payment gateway" });
+                }
+            });
+        });
+
+        cashfreeRequest.on('error', (error) => {
+            console.error("Request Error:", error);
+            res.status(500).json({ error: "Failed to connect to payment gateway" });
+        });
+
+        cashfreeRequest.write(postData);
+        cashfreeRequest.end();
+
+    } catch (error) {
+        console.error("Error creating renewal order:", error.message);
+        res.status(500).json({ error: "Failed to create renewal order" });
     }
 });
 
