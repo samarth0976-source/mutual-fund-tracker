@@ -60,15 +60,19 @@ const Profile = () => {
         }
     };
 
-    // Calculate progress percentage
+    // Calculate progress percentage based on days remaining
     const getProgressPercentage = () => {
-        if (!user?.isPro || !user?.subscriptionExpiry) return 0;
-        const now = new Date();
-        const expiry = new Date(user.subscriptionExpiry);
-        const total = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
-        const remaining = expiry - now;
-        const percentage = Math.max(0, Math.min(100, (remaining / total) * 100));
+        if (!user?.isPro || !user?.daysRemaining === undefined) return 0;
+        const percentage = Math.max(0, Math.min(100, (user.daysRemaining / 30) * 100));
         return percentage;
+    };
+
+    // Get color based on days remaining
+    const getProgressColor = () => {
+        if (!user?.daysRemaining) return 'bg-red-500';
+        if (user.daysRemaining > 15) return 'bg-green-500';
+        if (user.daysRemaining > 5) return 'bg-yellow-500';
+        return 'bg-red-500';
     };
 
     const formatDate = (dateString) => {
@@ -101,8 +105,8 @@ const Profile = () => {
                             {user?.isPro ? 'Pro Member' : 'Free Member'}
                         </p>
                         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${user?.isPro
-                                ? 'bg-yellow-500/10 text-yellow-400'
-                                : 'bg-white/5 text-muted'
+                            ? 'bg-yellow-500/10 text-yellow-400'
+                            : 'bg-white/5 text-muted'
                             }`}>
                             <Shield className="w-3 h-3" />
                             {user?.isPro ? 'Premium Account' : 'Standard Account'}
@@ -135,11 +139,11 @@ const Profile = () => {
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs text-muted">Days Remaining</p>
-                                        <p className={`font-bold text-2xl ${user?.daysRemaining > 7 ? 'text-green-400' :
-                                                user?.daysRemaining > 0 ? 'text-yellow-400' :
+                                        <p className={`font-bold text-2xl ${user?.daysRemaining > 15 ? 'text-green-400' :
+                                                user?.daysRemaining > 5 ? 'text-yellow-400' :
                                                     'text-red-400'
                                             }`}>
-                                            {user?.daysRemaining || 0}
+                                            {user?.daysRemaining !== undefined ? user.daysRemaining : 0}
                                         </p>
                                     </div>
                                 </div>
@@ -147,19 +151,47 @@ const Profile = () => {
                                 {/* Progress Bar */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-xs text-muted">
-                                        <span>Subscription Progress</span>
-                                        <span>{Math.round(getProgressPercentage())}%</span>
+                                        <span>Subscription Time Remaining</span>
+                                        <span>{user?.daysRemaining || 0} of 30 days</span>
                                     </div>
-                                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden relative">
                                         <div
-                                            className={`h-full transition-all duration-500 ${getProgressPercentage() > 50 ? 'bg-green-500' :
-                                                    getProgressPercentage() > 20 ? 'bg-yellow-500' :
-                                                        'bg-red-500'
-                                                }`}
+                                            className={`h-full transition-all duration-500 ${getProgressColor()}`}
                                             style={{ width: `${getProgressPercentage()}%` }}
                                         />
                                     </div>
                                 </div>
+
+                                {/* Renewal Button for 5 days or less */}
+                                {user?.daysRemaining <= 5 && user?.daysRemaining > 0 && (
+                                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-yellow-400 mb-1">
+                                                    Subscription expiring soon
+                                                </p>
+                                                <p className="text-xs text-yellow-300/80">
+                                                    Renew now to continue enjoying Pro features
+                                                </p>
+                                            </div>
+                                            {error && (
+                                                <p className="text-xs text-red-400 mb-2">{error}</p>
+                                            )}
+                                            <button
+                                                onClick={handleRenew}
+                                                disabled={loading}
+                                                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                                            >
+                                                {loading ? 'Processing...' : (
+                                                    <>
+                                                        <CreditCard className="w-4 h-4" />
+                                                        Renew Now
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Renewal Banner */}
                                 {user?.isGracePeriod && (

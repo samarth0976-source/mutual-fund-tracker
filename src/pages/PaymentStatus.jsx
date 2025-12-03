@@ -6,8 +6,10 @@ const PaymentStatus = () => {
     const [searchParams] = useSearchParams();
     const orderId = searchParams.get('order_id');
     const navigate = useNavigate();
-    const { refreshUser } = useAuth();
+    const { refreshUser, user: contextUser } = useAuth();
     const [status, setStatus] = useState('verifying');
+    const [countdown, setCountdown] = useState(5);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
         const verifyPayment = async () => {
@@ -33,8 +35,8 @@ const PaymentStatus = () => {
 
                 if (data.success) {
                     setStatus('success');
-                    await refreshUser(); // Update local user state
-                    setTimeout(() => navigate('/dashboard'), 3000);
+                    setUser(data.user);
+                    await refreshUser(); // Update context user state
                 } else {
                     setStatus('failed');
                 }
@@ -45,7 +47,18 @@ const PaymentStatus = () => {
         };
 
         verifyPayment();
-    }, [orderId, navigate, refreshUser]);
+    }, [orderId, refreshUser]);
+
+    useEffect(() => {
+        if (status === 'success' && countdown > 0) {
+            const timer = setTimeout(() => {
+                setCountdown(countdown - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (status === 'success' && countdown === 0) {
+            navigate('/dashboard');
+        }
+    }, [status, countdown, navigate]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -65,8 +78,17 @@ const PaymentStatus = () => {
                             </svg>
                         </div>
                         <h2 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h2>
-                        <p className="text-gray-600">Your Pro subscription is now active.</p>
-                        <p className="text-sm text-gray-400 mt-4">Redirecting to dashboard...</p>
+                        <p className="text-gray-600 mb-2">Your Pro subscription is now active.</p>
+                        {user && (
+                            <p className="text-sm text-gray-500 mb-4">Valid until: {new Date(user.subscriptionExpiry).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}</p>
+                        )}
+                        <p className="text-sm text-gray-400 mt-4">
+                            Redirecting to dashboard in <span className="font-bold text-blue-600">{countdown}</span> seconds...
+                        </p>
                     </>
                 )}
 

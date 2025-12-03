@@ -432,16 +432,44 @@ const checkAndUpdateSubscription = async (user) => {
 
 app.get('/api/auth/user', authenticateToken, async (req, res) => {
     const users = await readUsers();
-    const user = users.find(u => u.id === req.user.id);
+    let user = users.find(u => u.id === req.user.id);
 
     if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Update subscription status
+    user = await checkAndUpdateSubscription(user);
+
+    // Calculate subscription metadata
+    let subscriptionData = {
+        isPro: user.isPro || false
+    };
+
+    if (user.isPro && user.subscriptionExpiry) {
+        const now = new Date();
+        const expiryDate = new Date(user.subscriptionExpiry);
+        const gracePeriodEnd = new Date(expiryDate.getTime() + 24 * 60 * 60 * 1000);
+
+        // Calculate days remaining
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysRemaining = Math.max(0, Math.ceil((expiryDate - now) / msPerDay));
+
+        // Check if in grace period
+        const isGracePeriod = now > expiryDate && now <= gracePeriodEnd;
+
+        subscriptionData = {
+            ...subscriptionData,
+            subscriptionExpiry: user.subscriptionExpiry,
+            daysRemaining: daysRemaining,
+            isGracePeriod: isGracePeriod
+        };
+    }
 
     res.json({
         user: {
             id: user.id,
             username: user.username,
             email: user.email,
-            isPro: user.isPro || false
+            ...subscriptionData
         }
     });
 });
@@ -567,11 +595,24 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
                         const userIndex = users.findIndex(u => u.id === req.user.id);
 
                         if (userIndex !== -1) {
+                            const subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                             users[userIndex].isPro = true;
-                            users[userIndex].subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                            users[userIndex].subscriptionExpiry = subscriptionExpiry;
                             await writeUsers(users);
 
-                            return res.json({ success: true, message: "Subscription activated" });
+                            return res.json({
+                                success: true,
+                                message: "Subscription activated",
+                                user: {
+                                    id: users[userIndex].id,
+                                    username: users[userIndex].username,
+                                    email: users[userIndex].email,
+                                    isPro: true,
+                                    subscriptionExpiry: subscriptionExpiry,
+                                    daysRemaining: 30,
+                                    isGracePeriod: false
+                                }
+                            });
                         }
                     }
 
