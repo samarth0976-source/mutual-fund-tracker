@@ -8,6 +8,10 @@ const FundDetails = () => {
     const { id } = useParams();
     const [fund, setFund] = useState(null);
     const [selectedPeriod, setSelectedPeriod] = useState('1Y');
+    const [showAI, setShowAI] = useState(false);
+    const [aiAnalysis, setAiAnalysis] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState(null);
 
     useEffect(() => {
         const loadFund = async () => {
@@ -16,6 +20,48 @@ const FundDetails = () => {
         };
         loadFund();
     }, [id]);
+
+    const handleAIAnalysis = async () => {
+        setShowAI(true);
+        setAiLoading(true);
+        setAiError(null);
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(`${API_URL}/api/ai/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fundName: fund.name,
+                    fundData: {
+                        nav: fund.nav,
+                        oneYearReturn: fund.returns['1Y'],
+                        threeYearReturn: fund.returns['3Y'],
+                        category: 'Equity',
+                        aum: fund.aum || 'N/A'
+                    }
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'AI analysis failed');
+            }
+
+            setAiAnalysis(data.analysis);
+        } catch (error) {
+            console.error('AI error:', error);
+            setAiError(error.message);
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     // Calculate chart data based on selected period
     const chartData = useMemo(() => {
@@ -183,8 +229,85 @@ const FundDetails = () => {
                             One-time Investment
                         </button>
                     </div>
+
+                    {/* Ask FundX AI Section */}
+                    <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 p-6 rounded-2xl">
+                        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                            <span className="text-2xl">🤖</span>
+                            Ask FundX AI
+                        </h3>
+                        <p className="text-sm text-muted mb-4">
+                            Get AI-powered insights and analysis for this fund.
+                        </p>
+                        <button
+                            onClick={handleAIAnalysis}
+                            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)]"
+                        >
+                            Analyze with AI
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {/* AI Analysis Modal */}
+            {showAI && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-surface border border-border rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <span className="text-3xl">🤖</span>
+                                FundX AI Analysis
+                            </h2>
+                            <button
+                                onClick={() => setShowAI(false)}
+                                className="text-muted hover:text-white transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="mb-4 p-4 bg-white/5 rounded-lg">
+                            <p className="text-sm font-semibold text-primary">{fund.name}</p>
+                        </div>
+
+                        {aiLoading && (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                                <p className="text-muted">Analyzing fund data with AI...</p>
+                            </div>
+                        )}
+
+                        {aiError && (
+                            <div className="p-4 bg-danger/10 border border-danger rounded-lg text-danger">
+                                <p className="font-semibold mb-1">Error</p>
+                                <p className="text-sm">{aiError}</p>
+                                {aiError.includes('not configured') && (
+                                    <p className="text-xs mt-2 text-muted">
+                                        AI features require GEMINI_API_KEY to be configured.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {aiAnalysis && (
+                            <div className="prose prose-invert max-w-none">
+                                <div className="text-text whitespace-pre-wrap leading-relaxed">
+                                    {aiAnalysis}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setShowAI(false)}
+                                className="px-6 py-2 bg-surface border border-border text-text rounded-lg hover:bg-white/5 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

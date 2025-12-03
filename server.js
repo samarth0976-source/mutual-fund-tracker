@@ -11,6 +11,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
+import mongoose from 'mongoose';
+import cron from 'node-cron';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +33,78 @@ const CASHFREE_BASE_URL = 'https://api.cashfree.com/pg/orders';
 // Caches with different TTLs for different data types
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
 const holdingsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for holdings (faster refresh)
+const fundDetailsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for fund details
 const yahooFinance = new YahooFinance();
+
+// MongoDB Connection (optional - falls back to file-based if not configured)
+const MONGODB_URI = process.env.MONGODB_URI;
+let User = null;
+
+if (MONGODB_URI) {
+    try {
+        await mongoose.connect(MONGODB_URI);
+        console.log('✅ Connected to MongoDB');
+
+        // Dynamically import User model only if MongoDB is connected
+        const { default: UserModel } = await import('./models/User.js');
+        User = UserModel;
+    } catch (error) {
+        console.warn('⚠️  MongoDB connection failed, using file-based storage:', error.message);
+    }
+} else {
+    console.log('ℹ️  No MONGODB_URI found, using file-based storage');
+}
+
+// News Scraper Setup
+let newsCache = [];
+let lastNewsUpdate = null;
+
+async function updateNews() {
+    try {
+        const response = await axios.get('https://www.moneycontrol.com/news/business/markets/', {
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+
+        // Simple extraction - in production, use cheerio for better parsing
+        const newsItems = [];
+        const titleMatches = response.data.match(/<h2[^>]*><a[^>]*>([^<]+)<\/a><\/h2>/g) || [];
+
+        titleMatches.slice(0, 10).forEach((match, i) => {
+            const title = match.replace(/<[^>]*>/g, '').trim();
+            if (title) {
+                newsItems.push({
+                    id: `news_${Date.now()}_${i}`,
+                    title,
+                    source: 'Moneycontrol',
+                    timestamp: new Date().toISOString(),
+                    url: 'https://www.moneycontrol.com/news/business/markets/'
+                });
+            }
+        });
+
+        newsCache = newsItems;
+        lastNewsUpdate = new Date();
+        console.log(`[News] Updated ${newsItems.length} items at ${lastNewsUpdate.toLocaleTimeString()}`);
+    } catch (error) {
+        console.error('[News] Update failed:', error.message);
+    }
+}
+
+// Update news every 30 minutes
+cron.schedule('*/30 * * * *', updateNews);
+updateNews(); // Initial fetch
+
+// Gemini AI Setup (optional)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+let genAI = null;
+
+if (GEMINI_API_KEY) {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    console.log('✅ Gemini AI initialized');
+} else {
+    console.log('ℹ️  No GEMINI_API_KEY found, AI features disabled');
+}
 
 app.use(cors());
 app.use(express.json());
@@ -499,32 +573,10 @@ app.delete('/api/auth/account', authenticateToken, async (req, res) => {
 // Market news endpoint
 app.get('/api/news', authenticateToken, async (req, res) => {
     try {
-        // Mock news data - in production, this would scrape from financial sites
-        const news = [
-            {
-                id: 1,
-                title: "Nifty 50 hits new all-time high",
-                source: "Moneycontrol",
-                timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago
-                url: "https://www.moneycontrol.com"
-            },
-            {
-                id: 2,
-                title: "Gold prices surge amid global uncertainty",
-                source: "ET Markets",
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-                url: "https://economictimes.indiatimes.com"
-            },
-            {
-                id: 3,
-                title: "RBI holds repo rate steady at 6.5%",
-                source: "LiveMint",
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-                url: "https://www.livemint.com"
-            }
-        ];
-
-        res.json({ news });
+        res.json({
+            news: newsCache,
+            lastUpdated: lastNewsUpdate
+        });
     } catch (error) {
         console.error('News error:', error);
         res.status(500).json({ error: 'Failed to fetch news' });
@@ -765,6 +817,59 @@ app.post('/api/payment/renew', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error("Error creating renewal order:", error.message);
         res.status(500).json({ error: "Failed to create renewal order" });
+    }
+});
+
+// ============ GEMINI AI ROUTES ============
+
+app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
+    try {
+        if (!genAI) {
+            return res.status(503).json({
+                error: 'AI service not configured',
+                message: 'Please add GEMINI_API_KEY to enable AI features'
+            });
+        }
+
+        const { fundName, fundData, userQuestion } = req.body;
+
+        if (!fundName) {
+            return res.status(400).json({ error: 'Fund name is required' });
+        }
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+        const prompt = `You are FundX AI, an expert mutual fund advisor. Analyze this mutual fund and provide concise, actionable insights.
+
+Fund Name: ${fundName}
+${fundData ? `
+NAV: ₹${fundData.nav || 'N/A'}
+1Y Return: ${fundData.oneYearReturn || 'N/A'}%
+3Y Return: ${fundData.threeYearReturn || 'N/A'}%
+Category: ${fundData.category || 'N/A'}
+AUM: ${fundData.aum || 'N/A'}
+` : ''}
+
+${userQuestion ? `User Question: ${userQuestion}` : 'Provide a comprehensive analysis covering performance, risk level, and suitability.'}
+
+Respond in 3-4 short paragraphs. Be specific and actionable.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const analysis = response.text();
+
+        res.json({
+            analysis,
+            fundName,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('AI analysis error:', error);
+        res.status(500).json({
+            error: 'AI analysis failed',
+            message: error.message
+        });
     }
 });
 
