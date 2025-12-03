@@ -49,6 +49,52 @@ const listUsers = async () => {
     console.log('=================\n');
 };
 
+const createUser = async () => {
+    const users = await readUsers();
+
+    console.log('\n--- Create New User ---');
+    const username = await question('Username: ');
+    if (users.find(u => u.username === username)) {
+        console.log('❌ Username already exists.');
+        return;
+    }
+
+    const email = await question('Email: ');
+    if (users.find(u => u.email === email)) {
+        console.log('❌ Email already exists.');
+        return;
+    }
+
+    const password = await question('Password: ');
+    if (!password) {
+        console.log('❌ Password cannot be empty.');
+        return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = {
+        id: Date.now().toString(),
+        username,
+        email,
+        password: hashedPassword,
+        createdAt: new Date().toISOString(),
+        isPro: false
+    };
+
+    const makePro = await question('Should this user be Pro? (y/n): ');
+    if (makePro.toLowerCase() === 'y') {
+        newUser.isPro = true;
+        const expiry = new Date();
+        expiry.setFullYear(expiry.getFullYear() + 1);
+        newUser.subscriptionExpiry = expiry.toISOString();
+    }
+
+    users.push(newUser);
+    await writeUsers(users);
+    console.log(`✅ User '${username}' created successfully!`);
+};
+
 const changePassword = async () => {
     const users = await readUsers();
     const username = await question('Enter username to change password: ');
@@ -125,12 +171,13 @@ const main = async () => {
     while (true) {
         console.log('\n--- User Management Menu ---');
         console.log('1. List Users');
-        console.log('2. Change User Password');
-        console.log('3. Toggle Pro/Free Status');
-        console.log('4. Save & Push to GitHub (Deploy)');
-        console.log('5. Exit');
+        console.log('2. Create New User');
+        console.log('3. Change User Password');
+        console.log('4. Toggle Pro/Free Status');
+        console.log('5. Save & Push to GitHub (Deploy)');
+        console.log('6. Exit');
 
-        const choice = await question('\nEnter choice (1-5): ');
+        const choice = await question('\nEnter choice (1-6): ');
 
         try {
             switch (choice) {
@@ -138,15 +185,18 @@ const main = async () => {
                     await listUsers();
                     break;
                 case '2':
-                    await changePassword();
+                    await createUser();
                     break;
                 case '3':
-                    await toggleProStatus();
+                    await changePassword();
                     break;
                 case '4':
-                    await pushToGithub();
+                    await toggleProStatus();
                     break;
                 case '5':
+                    await pushToGithub();
+                    break;
+                case '6':
                     console.log('Goodbye!');
                     rl.close();
                     return;

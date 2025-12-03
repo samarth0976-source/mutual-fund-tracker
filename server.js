@@ -478,6 +478,59 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
+// Delete account endpoint
+app.delete('/api/auth/account', authenticateToken, async (req, res) => {
+    try {
+        const users = await readUsers();
+        const filteredUsers = users.filter(u => u.id !== req.user.id);
+
+        if (users.length === filteredUsers.length) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        await writeUsers(filteredUsers);
+        res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Market news endpoint
+app.get('/api/news', authenticateToken, async (req, res) => {
+    try {
+        // Mock news data - in production, this would scrape from financial sites
+        const news = [
+            {
+                id: 1,
+                title: "Nifty 50 hits new all-time high",
+                source: "Moneycontrol",
+                timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago
+                url: "https://www.moneycontrol.com"
+            },
+            {
+                id: 2,
+                title: "Gold prices surge amid global uncertainty",
+                source: "ET Markets",
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+                url: "https://economictimes.indiatimes.com"
+            },
+            {
+                id: 3,
+                title: "RBI holds repo rate steady at 6.5%",
+                source: "LiveMint",
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
+                url: "https://www.livemint.com"
+            }
+        ];
+
+        res.json({ news });
+    } catch (error) {
+        console.error('News error:', error);
+        res.status(500).json({ error: 'Failed to fetch news' });
+    }
+});
+
 // ============ PAYMENT ROUTES ============
 
 app.post('/api/payment/create-order', authenticateToken, async (req, res) => {

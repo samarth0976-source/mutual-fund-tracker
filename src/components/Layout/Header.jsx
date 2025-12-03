@@ -9,8 +9,12 @@ const Header = () => {
     const [results, setResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showNews, setShowNews] = useState(false);
+    const [news, setNews] = useState([]);
+    const [hasUnreadNews, setHasUnreadNews] = useState(false);
     const searchRef = useRef(null);
     const userMenuRef = useRef(null);
+    const newsRef = useRef(null);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -34,7 +38,33 @@ const Header = () => {
         return () => clearTimeout(delayDebounceFn);
     }, [query, user]);
 
-    // Close search results and user menu when clicking outside
+    // Fetch news
+    useEffect(() => {
+        const fetchNews = async () => {
+            try {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/api/news`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                setNews(data.news || []);
+
+                // Check if there's news newer than last seen
+                const lastSeen = localStorage.getItem('lastNewsCheck') || new Date(0).toISOString();
+                const hasNew = data.news.some(item => item.timestamp > lastSeen);
+                setHasUnreadNews(hasNew);
+            } catch (error) {
+                console.error('Failed to fetch news:', error);
+            }
+        };
+
+        fetchNews();
+        const interval = setInterval(fetchNews, 5 * 60 * 1000); // Refresh every 5 minutes
+        return () => clearInterval(interval);
+    }, []);
+
+    // Close search results, user menu,  and news when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -42,6 +72,9 @@ const Header = () => {
             }
             if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
                 setShowUserMenu(false);
+            }
+            if (newsRef.current && !newsRef.current.contains(event.target)) {
+                setShowNews(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -51,6 +84,15 @@ const Header = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleNewsClick = () => {
+        setShowNews(!showNews);
+        if (!showNews) {
+            // Mark as seen
+            localStorage.setItem('lastNewsCheck', new Date().toISOString());
+            setHasUnreadNews(false);
+        }
     };
 
     const handleSearchFocus = () => {
@@ -132,10 +174,48 @@ const Header = () => {
                     </Link>
                 )}
 
-                <button className="relative text-muted hover:text-white transition-colors">
-                    <Bell className="w-6 h-6" />
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-danger rounded-full shadow-[0_0_8px_rgba(255,23,68,0.6)]"></span>
-                </button>
+                {/* News Notification Bell */}
+                <div className="relative" ref={newsRef}>
+                    <button
+                        onClick={handleNewsClick}
+                        className="relative text-muted hover:text-white transition-colors"
+                    >
+                        <Bell className="w-6 h-6" />
+                        {hasUnreadNews && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-danger rounded-full shadow-[0_0_8px_rgba(255,23,68,0.6)]"></span>
+                        )}
+                    </button>
+
+                    {/* News Dropdown */}
+                    {showNews && (
+                        <div className="absolute top-full right-0 mt-2 w-96 bg-surface border border-border rounded-xl shadow-2xl overflow-hidden py-2 max-h-96 overflow-y-auto">
+                            <div className="px-4 py-2 border-b border-border">
+                                <h3 className="font-semibold text-white">Market News</h3>
+                            </div>
+                            {news.length > 0 ? (
+                                news.map((item) => (
+                                    <a
+                                        key={item.id}
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block px-4 py-3 hover:bg-white/5 border-b border-border last:border-0 transition-colors"
+                                    >
+                                        <p className="text-sm font-medium text-white mb-1">{item.title}</p>
+                                        <div className="flex items-center justify-between text-xs text-muted">
+                                            <span>{item.source}</span>
+                                            <span>{new Date(item.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                <div className="px-4 py-3 text-center text-muted text-sm">
+                                    No news available
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 <div className="relative" ref={userMenuRef}>
                     <button

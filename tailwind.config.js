@@ -8,14 +8,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a0a',
-        surface: '#121212',
-        primary: '#00e676', // Neon Green
-        secondary: '#2979ff', // Neon Blue
-        danger: '#ff1744', // Neon Red
-        text: '#e0e0e0',
-        muted: '#a0a0a0',
-        border: '#333333',
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        primary: 'var(--primary)',
+        secondary: 'var(--secondary)',
+        danger: 'var(--danger)',
+        text: 'var(--text)',
+        muted: 'var(--muted)',
+        border: 'var(--border)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

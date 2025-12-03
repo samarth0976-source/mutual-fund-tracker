@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Shield, Key, Calendar, AlertCircle, CreditCard } from 'lucide-react';
 
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -57,6 +59,38 @@ const Profile = () => {
             console.error("Renewal Error:", err);
             setError(err.message);
             setLoading(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmation !== 'DELETE') {
+            alert('Please type DELETE to confirm');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/auth/account`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete account');
+            }
+
+            // Logout and redirect
+            logout();
+            navigate('/login');
+        } catch (err) {
+            console.error('Delete account error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+            setShowDeleteModal(false);
         }
     };
 
@@ -140,8 +174,8 @@ const Profile = () => {
                                     <div className="space-y-1">
                                         <p className="text-xs text-muted">Days Remaining</p>
                                         <p className={`font-bold text-2xl ${user?.daysRemaining > 15 ? 'text-green-400' :
-                                                user?.daysRemaining > 5 ? 'text-yellow-400' :
-                                                    'text-red-400'
+                                            user?.daysRemaining > 5 ? 'text-yellow-400' :
+                                                'text-red-400'
                                             }`}>
                                             {user?.daysRemaining !== undefined ? user.daysRemaining : 0}
                                         </p>
@@ -288,8 +322,72 @@ const Profile = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Delete Account Section */}
+                    <div className="bg-surface border border-danger/30 rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-danger mb-2 flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            Danger Zone
+                        </h3>
+                        <p className="text-sm text-muted mb-4">
+                            Once you delete your account, there is no going back. Please be certain.
+                        </p>
+                        <button
+                            onClick={() => setShowDeleteModal(true)}
+                            className="px-4 py-2 bg-danger/10 text-danger border border-danger hover:bg-danger hover:text-white rounded-lg transition-colors font-medium"
+                        >
+                            Delete Account
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {/* Delete Account Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-surface border border-danger/30 rounded-2xl p-8 max-w-md w-full">
+                        <h2 className="text-2xl font-bold text-danger mb-4">Delete Account</h2>
+                        <p className="text-text mb-4">
+                            This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                        </p>
+                        <p className="text-sm text-muted mb-4">
+                            Please type <span className="font-mono font-bold text-white">DELETE</span> to confirm.
+                        </p>
+                        <input
+                            type="text"
+                            value={deleteConfirmation}
+                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text mb-4 focus:outline-none focus:border-danger"
+                            placeholder="Type DELETE"
+                        />
+                        {error && (
+                            <div className="mb-4 p-3 bg-danger/10 border border-danger rounded-lg text-danger text-sm">
+                                {error}
+                            </div>
+                        )}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setDeleteConfirmation('');
+                                    setError(null);
+                                }}
+                                className="flex-1 px-4 py-2 bg-surface border border-border text-text rounded-lg hover:bg-white/5 transition-colors"
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                className="flex-1 px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/80 transition-colors disabled:opacity-50"
+                                disabled={loading || deleteConfirmation !== 'DELETE'}
+                            >
+                                {loading ? 'Deleting...' : 'Delete Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
