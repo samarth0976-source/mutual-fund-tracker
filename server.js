@@ -875,7 +875,7 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Fund name is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const prompt = `You are FundX AI, an expert mutual fund advisor. Analyze this mutual fund and provide concise, actionable insights.
 
