@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { getTopMutualFunds, enrichDashboardFunds } from '../services/api';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
     const [funds, setFunds] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     useEffect(() => {
         const loadFunds = async () => {
@@ -25,6 +27,14 @@ const Dashboard = () => {
         };
         loadFunds();
     }, []);
+
+    const handleViewAll = () => {
+        if (user?.isPro) {
+            navigate('/market');
+        } else {
+            navigate('/payment');
+        }
+    };
 
     return (
         <div className="space-y-8">
@@ -57,7 +67,13 @@ const Dashboard = () => {
             <div className="bg-surface border border-border rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-border flex items-center justify-between">
                     <h2 className="text-xl font-bold text-white">Top 20 Performing Funds</h2>
-                    <button onClick={() => navigate('/market')} className="text-primary text-sm font-medium hover:underline">View All</button>
+                    <button
+                        onClick={handleViewAll}
+                        className="flex items-center gap-2 text-primary text-sm font-medium hover:underline"
+                    >
+                        {!user?.isPro && <Lock className="w-3 h-3" />}
+                        View All
+                    </button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">

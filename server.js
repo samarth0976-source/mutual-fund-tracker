@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import NodeCache from 'node-cache';
@@ -9,16 +10,22 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import https from 'https';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
-// Secret key for JWT (in production, use environment variable)
-const JWT_SECRET = 'your-secret-key-change-this-in-production';
+// Secret key for JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
 const USERS_FILE = path.join(__dirname, 'users.json');
+
+// Cashfree Configuration
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
+const CASHFREE_SECRET = process.env.CASHFREE_SECRET;
+const CASHFREE_BASE_URL = 'https://api.cashfree.com/pg/orders';
 
 // Caches with different TTLs for different data types
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
@@ -26,12 +33,12 @@ const holdingsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for holdings (f
 const yahooFinance = new YahooFinance();
 
 app.use(cors());
-app.use(express.json()); // Parse JSON request bodies
+app.use(express.json());
 
 // Helper to fetch real returns using Yahoo Data
 const fetchRealReturns = async (symbol) => {
     try {
-        const queryOptions = { period1: '2020-01-01', interval: '1mo' }; // Fetch enough history
+        const queryOptions = { period1: '2020-01-01', interval: '1mo' };
 
         try {
             const chart = await yahooFinance.chart(symbol, queryOptions);
@@ -52,7 +59,6 @@ const fetchRealReturns = async (symbol) => {
                         closest = q;
                     }
                 }
-                // If closest is more than 1 month away, consider it missing
                 if (minDiff > 30 * 24 * 3600 * 1000) return null;
                 return closest ? closest.close : null;
             };
@@ -112,8 +118,8 @@ const fetchPageWithPuppeteer = async (url) => {
     }
 };
 
-const BATCH_SIZE = 10; // Increased from 5 for faster processing
-const DELAY_MS = 50; // Reduced from 200ms for faster completion
+const BATCH_SIZE = 10;
+const DELAY_MS = 50;
 const GROWW_SEARCH_URL = "https://groww.in/v1/api/search/v1/entity?app=false&page=0&q=";
 
 const processBatch = async (batch) => {
@@ -126,7 +132,6 @@ const processBatch = async (batch) => {
                 throw new Error("Missing company_name");
             }
 
-            // Hybrid: Search Yahoo using company name from Groww
             const yahooSearch = await yahooFinance.search(item.company_name);
             if (yahooSearch.quotes && yahooSearch.quotes.length > 0) {
                 const symbol = yahooSearch.quotes[0].symbol;
@@ -159,7 +164,6 @@ app.get('/api/holdings', async (req, res) => {
     }
 
     try {
-        // Check holdings cache first (1 hour TTL)
         const holdingsCacheKey = `holdings_${name}`;
         const cachedHoldings = holdingsCache.get(holdingsCacheKey);
 
@@ -177,13 +181,12 @@ app.get('/api/holdings', async (req, res) => {
 
         console.log(`Fetching fresh data for: ${name}`);
 
-        // Step 1: Search for the fund to get its Slug (using axios as it works)
         const headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         };
 
         let slug;
-        let fundTitle = name; // Default to query name
+        let fundTitle = name;
         const cacheKey = `search_${name}`;
         const cachedSlug = searchCache.get(cacheKey);
 
@@ -196,14 +199,13 @@ app.get('/api/holdings', async (req, res) => {
                 if (searchResponse.data && searchResponse.data.content && searchResponse.data.content.length > 0) {
                     const fund = searchResponse.data.content[0];
                     slug = fund.search_id;
-                    fundTitle = fund.title || name; // Update fundTitle if found
+                    fundTitle = fund.title || name;
                     searchCache.set(cacheKey, slug);
                     console.log(`Found fund: ${fund.title} (Slug: ${slug})`);
                 }
             } catch (err) {
                 if (err.response && err.response.status === 429) {
                     console.warn("Groww Search Rate Limit (429). Using fallback if available.");
-                    // Fallback for known funds if rate limited
                     if (name.toLowerCase().includes("quant small cap")) {
                         slug = "quant-small-cap-fund-direct-plan-growth";
                         fundTitle = "Quant Small Cap Fund Direct Plan Growth";
@@ -222,7 +224,6 @@ app.get('/api/holdings', async (req, res) => {
             return res.status(404).json({ error: "Fund not found" });
         }
 
-        // Step 2: Fetch the Public Page with Puppeteer
         const pageUrl = `https://groww.in/mutual-funds/${slug}`;
         const nextData = await fetchPageWithPuppeteer(pageUrl);
 
@@ -231,7 +232,6 @@ app.get('/api/holdings', async (req, res) => {
             return res.status(500).json({ error: "Failed to fetch page data" });
         }
 
-        // Helper to find key recursively
         const findKey = (obj, key) => {
             if (obj && typeof obj === 'object') {
                 if (obj[key]) return obj[key];
@@ -252,7 +252,6 @@ app.get('/api/holdings', async (req, res) => {
 
         console.log(`Found ${holdingsRaw.length} holdings`);
 
-        // Step 3: Transform Data
         const processedHoldings = [];
         for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
             const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
@@ -265,7 +264,6 @@ app.get('/api/holdings', async (req, res) => {
             }
         }
 
-        // Return processed holdings with metadata
         const response = {
             holdings: processedHoldings,
             meta: {
@@ -276,7 +274,6 @@ app.get('/api/holdings', async (req, res) => {
             }
         };
 
-        // Store in cache for future requests (1 hour TTL)
         holdingsCache.set(holdingsCacheKey, response);
         console.log(`Cached holdings for: ${name}`);
 
@@ -293,7 +290,6 @@ app.get('/api/holdings', async (req, res) => {
 
 // ============ AUTHENTICATION SYSTEM ============
 
-// Helper functions for user management
 const readUsers = async () => {
     try {
         const data = await fs.readFile(USERS_FILE, 'utf-8');
@@ -307,7 +303,6 @@ const writeUsers = async (users) => {
     await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
 };
 
-// Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -325,7 +320,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Signup route
 app.post('/api/auth/signup', async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -352,21 +346,22 @@ app.post('/api/auth/signup', async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isPro: false
         };
 
         users.push(newUser);
         await writeUsers(users);
 
         const token = jwt.sign(
-            { id: newUser.id, username: newUser.username, email: newUser.email },
+            { id: newUser.id, username: newUser.username, email: newUser.email, isPro: false },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
 
         res.json({
             token,
-            user: { id: newUser.id, username: newUser.username, email: newUser.email }
+            user: { id: newUser.id, username: newUser.username, email: newUser.email, isPro: false }
         });
     } catch (error) {
         console.error('Signup error:', error);
@@ -374,7 +369,6 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
-// Login route
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { emailOrUsername, password } = req.body;
@@ -396,14 +390,14 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, username: user.username, email: user.email },
+            { id: user.id, username: user.username, email: user.email, isPro: user.isPro || false },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
 
         res.json({
             token,
-            user: { id: user.id, username: user.username, email: user.email }
+            user: { id: user.id, username: user.username, email: user.email, isPro: user.isPro || false }
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -411,16 +405,172 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Get current user
-app.get('/api/auth/user', authenticateToken, (req, res) => {
-    res.json({ user: req.user });
+app.get('/api/auth/user', authenticateToken, async (req, res) => {
+    const users = await readUsers();
+    const user = users.find(u => u.id === req.user.id);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json({
+        user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isPro: user.isPro || false
+        }
+    });
 });
 
-// Logout
 app.post('/api/auth/logout', (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
+// ============ PAYMENT ROUTES ============
+
+app.post('/api/payment/create-order', authenticateToken, async (req, res) => {
+    try {
+        const orderId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+        const requestPayload = {
+            order_amount: 50.00,
+            order_currency: "INR",
+            order_id: orderId,
+            customer_details: {
+                customer_id: req.user.id,
+                customer_phone: "9999999999",
+                customer_name: req.user.username,
+                customer_email: req.user.email
+            },
+            order_meta: {
+                return_url: `https://www.cashfree.com/devstudio/preview/pg/web/popupCheckout?order_id=${orderId}`
+            }
+        };
+
+        const postData = JSON.stringify(requestPayload);
+
+        const options = {
+            hostname: 'api.cashfree.com',
+            port: 443,
+            path: '/pg/orders',
+            method: 'POST',
+            headers: {
+                'x-client-id': CASHFREE_APP_ID.trim(),
+                'x-client-secret': CASHFREE_SECRET.trim(),
+                'x-api-version': '2025-01-01',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        };
+
+        console.log("Creating Cashfree order...");
+
+        const cashfreeRequest = https.request(options, (cashfreeRes) => {
+            let data = '';
+
+            cashfreeRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            cashfreeRes.on('end', () => {
+                try {
+                    const responseData = JSON.parse(data);
+
+                    if (cashfreeRes.statusCode === 200) {
+                        console.log("Order Created Successfully");
+                        res.json(responseData);
+                    } else {
+                        console.error("Cashfree Error:", responseData);
+                        res.status(cashfreeRes.statusCode).json({ error: responseData.message || "Failed to create order" });
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing response:", parseError);
+                    res.status(500).json({ error: "Invalid response from payment gateway" });
+                }
+            });
+        });
+
+        cashfreeRequest.on('error', (error) => {
+            console.error("Request Error:", error);
+            res.status(500).json({ error: "Failed to connect to payment gateway" });
+        });
+
+        cashfreeRequest.write(postData);
+        cashfreeRequest.end();
+
+    } catch (error) {
+        console.error("Error creating order:", error.message);
+        res.status(500).json({ error: "Failed to create order" });
+    }
+});
+
+app.post('/api/payment/verify', authenticateToken, async (req, res) => {
+    try {
+        const { orderId } = req.body;
+
+        const options = {
+            hostname: 'api.cashfree.com',
+            port: 443,
+            path: `/pg/orders/${orderId}/payments`,
+            method: 'GET',
+            headers: {
+                'x-client-id': CASHFREE_APP_ID.trim(),
+                'x-client-secret': CASHFREE_SECRET.trim(),
+                'x-api-version': '2025-01-01',
+                'Accept': 'application/json'
+            }
+        };
+
+        console.log("Verifying payment...");
+
+        const cashfreeRequest = https.request(options, (cashfreeRes) => {
+            let data = '';
+
+            cashfreeRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            cashfreeRes.on('end', async () => {
+                try {
+                    const payments = JSON.parse(data);
+
+                    const successfulPayment = Array.isArray(payments) ?
+                        payments.find(payment => payment.payment_status === "SUCCESS") : null;
+
+                    if (successfulPayment) {
+                        const users = await readUsers();
+                        const userIndex = users.findIndex(u => u.id === req.user.id);
+
+                        if (userIndex !== -1) {
+                            users[userIndex].isPro = true;
+                            users[userIndex].subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                            await writeUsers(users);
+
+                            return res.json({ success: true, message: "Subscription activated" });
+                        }
+                    }
+
+                    res.json({ success: false, message: "Payment not verified" });
+                } catch (parseError) {
+                    console.error("Error parsing verification response:", parseError);
+                    res.status(500).json({ error: "Invalid response from payment gateway" });
+                }
+            });
+        });
+
+        cashfreeRequest.on('error', (error) => {
+            console.error("Request Error:", error);
+            res.status(500).json({ error: "Failed to connect to payment gateway" });
+        });
+
+        cashfreeRequest.end();
+
+    } catch (error) {
+        console.error("Error verifying payment:", error.message);
+        res.status(500).json({ error: "Verification failed" });
+    }
+});
+
 app.listen(port, () => {
-    console.log(`Proxy server running at http://localhost:${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });

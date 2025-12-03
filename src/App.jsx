@@ -10,6 +10,8 @@ import Market from './pages/Market';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import PaymentPage from './pages/PaymentPage';
+import PaymentStatus from './pages/PaymentStatus';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-8 text-white">
@@ -74,6 +76,22 @@ function App() {
             <ProtectedRoute>
               <AuthenticatedLayout>
                 <PlaceholderPage title="My Portfolio" />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/payment" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout>
+                <PaymentPage />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/payment/status" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout>
+                <PaymentStatus />
               </AuthenticatedLayout>
             </ProtectedRoute>
           } />
