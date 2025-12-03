@@ -56,7 +56,7 @@ const PaymentStatus = () => {
             }, 1000);
             return () => clearTimeout(timer);
         } else if (status === 'success' && countdown === 0) {
-            navigate('/dashboard');
+            navigate('');
         }
     }, [status, countdown, navigate]);
 
