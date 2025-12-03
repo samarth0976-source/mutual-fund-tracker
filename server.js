@@ -14,6 +14,7 @@ import https from 'https';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as cheerio from 'cheerio';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,66 +60,67 @@ if (MONGODB_URI) {
 let newsCache = [];
 let lastNewsUpdate = null;
 
+
 async function updateNews() {
     try {
-        // Fallback to curated news items (web scraping can be unreliable)
-        const newsItems = [
-            {
-                id: `news_${Date.now()}_1`,
-                title: "Sensex gains 200 points, Nifty near 24,400; IT stocks lead",
-                source: 'Moneycontrol',
-                timestamp: new Date().toISOString(),
-                url: 'https://www.moneycontrol.com/news/business/markets/'
-            },
-            {
-                id: `news_${Date.now()}_2`,
-                title: "FPI inflows surge to ₹40,000 crore in November amid market rally",
-                source: 'Economic Times',
-                timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min ago
-                url: 'https://economictimes.indiatimes.com/markets'
-            },
-            {
-                id: `news_${Date.now()}_3`,
-                title: "Mutual fund SIP inflows cross ₹20,000 crore mark for third consecutive month",
-                source: 'LiveMint',
-                timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(), // 1.5 hours ago
-                url: 'https://www.livemint.com/market'
-            },
-            {
-                id: `news_${Date.now()}_4`,
-                title: "RBI maintains repo rate at 6.5%, signals cautious stance on inflation",
-                source: 'Moneycontrol',
-                timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-                url: 'https://www.moneycontrol.com/news/business/'
-            },
-            {
-                id: `news_${Date.now()}_5`,
-                title: "IT sector stocks rally as TCS announces strong Q3 results",
-                source: 'Economic Times',
-                timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(), // 3 hours ago
-                url: 'https://economictimes.indiatimes.com/tech'
-            },
-            {
-                id: `news_${Date.now()}_6`,
-                title: "Gold prices touch new high amid global uncertainty",
-                source: 'NDTV Profit',
-                timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(), // 4 hours ago
-                url: 'https://www.ndtvprofit.com/markets'
-            },
-            {
-                id: `news_${Date.now()}_7`,
-                title: "Bank stocks outperform as credit growth accelerates",
-                source: 'Business Standard',
-                timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(), // 5 hours ago
-                url: 'https://www.business-standard.com/markets'
+        // Try scraping Moneycontrol using Cheerio
+        const response = await axios.get('https://www.moneycontrol.com/news/business/markets/', {
+            timeout: 5000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-        ];
+        });
 
-        newsCache = newsItems;
-        lastNewsUpdate = new Date();
-        console.log(`[News] Updated ${newsItems.length} items at ${lastNewsUpdate.toLocaleTimeString()}`);
+        const $ = cheerio.load(response.data);
+        const newsItems = [];
+
+        // Select news items (adjust selector based on Moneycontrol's structure)
+        $('li.clearfix').slice(0, 10).each((i, elem) => {
+            const titleElement = $(elem).find('h2 a');
+            const title = titleElement.text().trim();
+            const url = titleElement.attr('href');
+            const time = $(elem).find('span').text().trim();
+
+            if (title && url) {
+                newsItems.push({
+                    id: `news_${Date.now()}_${i}`,
+                    title,
+                    source: 'Moneycontrol',
+                    timestamp: new Date().toISOString(), // Use current time as fallback
+                    timeAgo: time,
+                    url: url
+                });
+            }
+        });
+
+        if (newsItems.length > 0) {
+            newsCache = newsItems;
+            lastNewsUpdate = new Date();
+            console.log(`[News] Scraped ${newsItems.length} items at ${lastNewsUpdate.toLocaleTimeString()}`);
+        } else {
+            throw new Error('No news items found');
+        }
     } catch (error) {
-        console.error('[News] Update failed:', error.message);
+        console.error('[News] Scraping failed, using fallback:', error.message);
+        // Fallback to generic market news if scraping fails
+        if (newsCache.length === 0) {
+            newsCache = [
+                {
+                    id: `news_fallback_1`,
+                    title: "Market Update: Sensex and Nifty trading flat amid global cues",
+                    source: 'Market News',
+                    timestamp: new Date().toISOString(),
+                    url: 'https://www.moneycontrol.com/news/business/markets/'
+                },
+                {
+                    id: `news_fallback_2`,
+                    title: "Top mutual funds to invest in for 2025: Expert analysis",
+                    source: 'Fund Insights',
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    url: 'https://www.moneycontrol.com/mutual-funds/'
+                }
+            ];
+        }
     }
 }
 
@@ -139,6 +141,11 @@ if (GEMINI_API_KEY) {
 
 app.use(cors());
 app.use(express.json());
+
+// ... (rest of the file)
+
+// In the AI endpoint (around line 840):
+// const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
 
 // Helper to fetch real returns using Yahoo Data
 const fetchRealReturns = async (symbol) => {
@@ -868,7 +875,7 @@ app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Fund name is required' });
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
 
         const prompt = `You are FundX AI, an expert mutual fund advisor. Analyze this mutual fund and provide concise, actionable insights.
 
