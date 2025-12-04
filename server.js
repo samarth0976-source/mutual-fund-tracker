@@ -574,70 +574,104 @@ app.get('/api/holdings', async (req, res) => {
                 }
             }
         }
-    }
 
-const pageUrl = `https://groww.in/mutual-funds/${slug}`;
-    const nextData = await fetchPageWithPuppeteer(pageUrl);
+        // If no slug found after all strategies, try using scheme code or construct slug manually
+        if (!slug && schemeCode) {
+            // Try fetching directly using MFAPI scheme code as Groww slug
+            const baseSlug = name
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
 
-    if (!nextData) {
-        console.log("Failed to fetch data with Puppeteer");
-        return res.status(500).json({ error: "Failed to fetch page data" });
-    }
+            // Try base slug and common variations
+            const slugVariations = [
+                baseSlug,
+                `${baseSlug}-direct-growth`,
+                `${baseSlug}-regular-growth`,
+                `${baseSlug}-direct-plan-growth`,
+                `${baseSlug}-regular-plan-growth`
+            ];
 
-    const findKey = (obj, key) => {
-        if (obj && typeof obj === 'object') {
-            if (obj[key]) return obj[key];
-            for (const k in obj) {
-                const result = findKey(obj[k], key);
-                if (result) return result;
+            for (const s of slugVariations) {
+                console.log(`Attempting direct URL with constructed slug: ${s}`);
+                // We'll just use the most likely one if it's a direct plan
+                if (name.toLowerCase().includes('direct')) {
+                    slug = s.includes('direct') ? s : `${baseSlug}-direct-growth`;
+                } else {
+                    slug = baseSlug;
+                }
+                fundTitle = name;
+                break;
+            }
+            // Force use of the constructed slug
+            if (!slug) slug = baseSlug;
+            console.log(`Using fallback slug: ${slug}`);
+        }
+
+        const pageUrl = `https://groww.in/mutual-funds/${slug}`;
+        const nextData = await fetchPageWithPuppeteer(pageUrl);
+
+        if (!nextData) {
+            console.log("Failed to fetch data with Puppeteer");
+            return res.status(500).json({ error: "Failed to fetch page data" });
+        }
+
+        const findKey = (obj, key) => {
+            if (obj && typeof obj === 'object') {
+                if (obj[key]) return obj[key];
+                for (const k in obj) {
+                    const result = findKey(obj[k], key);
+                    if (result) return result;
+                }
+            }
+            return null;
+        };
+
+        const holdingsRaw = findKey(nextData, "holdings");
+
+        if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
+            console.log("Holdings data not found in JSON");
+            return res.status(404).json({ error: "Holdings data not found" });
+        }
+
+        console.log(`Found ${holdingsRaw.length} holdings`);
+
+        const processedHoldings = [];
+        for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
+            const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
+            console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(holdingsRaw.length / BATCH_SIZE)}`);
+            const batchResults = await processBatch(batch);
+            processedHoldings.push(...batchResults);
+
+            if (i + BATCH_SIZE < holdingsRaw.length) {
+                await new Promise(resolve => setTimeout(resolve, DELAY_MS));
             }
         }
-        return null;
-    };
 
-    const holdingsRaw = findKey(nextData, "holdings");
+        const response = {
+            holdings: processedHoldings,
+            meta: {
+                fund: fundTitle,
+                totalHoldings: processedHoldings.length,
+                dataSource: 'Groww (via Puppeteer)',
+                timestamp: new Date().toISOString()
+            }
+        };
 
-    if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
-        console.log("Holdings data not found in JSON");
-        return res.status(404).json({ error: "Holdings data not found" });
+        holdingsCache.set(holdingsCacheKey, response);
+        console.log(`Cached holdings for: ${name}`);
+
+        res.json(response);
+
+    } catch (error) {
+        console.error('Error fetching holdings:', error.message);
+        res.status(500).json({
+            error: 'Failed to fetch data',
+            details: error.message
+        });
     }
-
-    console.log(`Found ${holdingsRaw.length} holdings`);
-
-    const processedHoldings = [];
-    for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
-        const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
-        console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(holdingsRaw.length / BATCH_SIZE)}`);
-        const batchResults = await processBatch(batch);
-        processedHoldings.push(...batchResults);
-
-        if (i + BATCH_SIZE < holdingsRaw.length) {
-            await new Promise(resolve => setTimeout(resolve, DELAY_MS));
-        }
-    }
-
-    const response = {
-        holdings: processedHoldings,
-        meta: {
-            fund: fundTitle,
-            totalHoldings: processedHoldings.length,
-            dataSource: 'Groww (via Puppeteer)',
-            timestamp: new Date().toISOString()
-        }
-    };
-
-    holdingsCache.set(holdingsCacheKey, response);
-    console.log(`Cached holdings for: ${name}`);
-
-    res.json(response);
-
-} catch (error) {
-    console.error('Error fetching holdings:', error.message);
-    res.status(500).json({
-        error: 'Failed to fetch data',
-        details: error.message
-    });
-}
 });
 
 app.get('/api/stock/details', async (req, res) => {
