@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import NodeCache from 'node-cache';
-import puppeteer from 'puppeteer';
+// import puppeteer from 'puppeteer'; // Removed unused puppeteer
 import axios from 'axios';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
