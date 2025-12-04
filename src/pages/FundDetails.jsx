@@ -159,7 +159,16 @@ const FundDetails = () => {
                                     )}
                                 </p>
                             </div>
-                            <div className="text-xs text-muted text-right">{fund.holdings.length} Companies</div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleRefreshData}
+                                    disabled={refreshing}
+                                    className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Data'}
+                                </button>
+                                <div className="text-xs text-muted text-right">{fund.holdings.length} Companies</div>
+                            </div>
                         </div>
                         <table className="w-full text-left">
                             <thead className="bg-white/5 text-muted text-sm">
