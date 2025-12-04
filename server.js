@@ -253,6 +253,84 @@ const fetchReturnsFromTV = async (stockName) => {
     });
 };
 
+// Helper to fetch stock details and history from TradingView
+const fetchStockDetailsFromTV = async (stockName) => {
+    return new Promise(async (resolve) => {
+        console.log(`[TV] Fetching details for: ${stockName}`);
+
+        try {
+            const searchResults = await TradingView.searchMarketV3(stockName);
+
+            if (!searchResults || searchResults.length === 0) {
+                return resolve(null);
+            }
+
+            const match = searchResults.find(s => s.exchange === 'NSE') ||
+                searchResults.find(s => s.exchange === 'BSE') ||
+                searchResults[0];
+
+            const symbol = `${match.exchange}:${match.symbol}`;
+            console.log(`[TV] Found symbol: ${symbol}`);
+
+            const client = new TradingView.Client();
+            const chart = new client.Session.Chart();
+
+            chart.setMarket(symbol, {
+                timeframe: 'D',
+                range: 365, // Request 1 year of data
+            });
+
+            const timeout = setTimeout(() => {
+                console.log(`[TV] Timeout for ${symbol}`);
+                client.end();
+                resolve(null);
+            }, 10000);
+
+            chart.onUpdate(() => {
+                if (!chart.periods || chart.periods.length === 0) return;
+
+                const periods = chart.periods;
+                const currentPrice = periods[0].close;
+                const meta = chart.infos;
+
+                const history = periods.map(p => ({
+                    time: p.time, // Unix timestamp in seconds
+                    open: p.open,
+                    high: p.high,
+                    low: p.low,
+                    close: p.close
+                })).reverse(); // Sort oldest to newest for charting
+
+                const details = {
+                    symbol: match.symbol,
+                    exchange: match.exchange,
+                    description: meta.description,
+                    currency: meta.currency_id,
+                    currentPrice: currentPrice,
+                    history: history
+                };
+
+                console.log(`[TV] Fetched details for ${symbol}`);
+
+                clearTimeout(timeout);
+                client.end();
+                resolve(details);
+            });
+
+            chart.onError((...err) => {
+                console.error(`[TV] Chart error for ${symbol}:`, ...err);
+                clearTimeout(timeout);
+                client.end();
+                resolve(null);
+            });
+
+        } catch (error) {
+            console.error(`[TV] Error fetching details for ${stockName}:`, error.message);
+            resolve(null);
+        }
+    });
+};
+
 // Helper to fetch page with Puppeteer
 const fetchPageWithPuppeteer = async (url) => {
     console.log(`Fetching page with Puppeteer: ${url}`);
@@ -440,6 +518,26 @@ app.get('/api/holdings', async (req, res) => {
             error: 'Failed to fetch data',
             details: error.message
         });
+    }
+});
+
+app.get('/api/stock/details', async (req, res) => {
+    const { name } = req.query;
+    if (!name) {
+        return res.status(400).json({ error: "Stock name is required" });
+    }
+
+    try {
+        const details = await fetchStockDetailsFromTV(name);
+
+        if (!details) {
+            return res.status(404).json({ error: "Stock details not found" });
+        }
+
+        res.json(details);
+    } catch (error) {
+        console.error('Error fetching stock details:', error);
+        res.status(500).json({ error: "Failed to fetch stock details" });
     }
 });
 

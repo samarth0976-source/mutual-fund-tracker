@@ -175,7 +175,11 @@ const FundDetails = () => {
                             <tbody className="divide-y divide-border">
                                 {fund.holdings.map((holding, i) => (
                                     <tr key={i} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-white">{holding.name}</td>
+                                        <td className="px-6 py-4 font-medium text-white">
+                                            <Link to={`/stock/${encodeURIComponent(holding.name)}`} className="hover:text-primary hover:underline transition-colors">
+                                                {holding.name}
+                                            </Link>
+                                        </td>
                                         <td className="px-6 py-4 text-muted">{holding.sector}</td>
                                         <td className="px-6 py-4 text-right font-mono text-white">{holding.allocation}%</td>
                                         <td className="px-6 py-4 text-right font-mono">

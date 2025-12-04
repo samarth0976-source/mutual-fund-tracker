@@ -17,6 +17,7 @@ import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import Refunds from './pages/Refunds';
 import Settings from './pages/Settings';
+import StockDetails from './pages/StockDetails';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-8 text-white">
@@ -58,6 +59,14 @@ function App() {
               <ProtectedRoute>
                 <AuthenticatedLayout>
                   <FundDetails />
+                </AuthenticatedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/stock/:name" element={
+              <ProtectedRoute>
+                <AuthenticatedLayout>
+                  <StockDetails />
                 </AuthenticatedLayout>
               </ProtectedRoute>
             } />
