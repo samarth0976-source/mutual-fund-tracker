@@ -1447,18 +1447,18 @@ const warmCache = async () => {
     console.log('🔥 Cache warming complete!');
 };
 
-// Run cache warming on startup (delayed to let server boot first)
-setTimeout(() => {
-    warmCache().catch(err => console.error('Cache warming error:', err));
-}, 10000); // Wait 10 seconds after startup
+// Cache warming disabled - causes resource issues on Render free tier
+// Use RapidAPI for holdings data instead (see implementation_plan.md)
+// setTimeout(() => {
+//     warmCache().catch(err => console.error('Cache warming error:', err));
+// }, 10000);
 
-// Run cache warming daily at 6 AM IST (00:30 UTC)
-cron.schedule('30 0 * * *', () => {
-    console.log('🔄 Running daily cache refresh...');
-    warmCache().catch(err => console.error('Daily cache refresh error:', err));
-});
+// Daily cache refresh also disabled
+// cron.schedule('30 0 * * *', () => {
+//     console.log('🔄 Running daily cache refresh...');
+//     warmCache().catch(err => console.error('Daily cache refresh error:', err));
+// });
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`🚀 Cache warming will start in 10 seconds...`);
 });
