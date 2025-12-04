@@ -107,45 +107,7 @@ export const getFundDetails = async (schemeCode) => {
             }
         };
 
-        const generateFallbackHoldings = () => {
-            const sectors = ['Financials', 'Technology', 'Energy', 'Construction', 'FMCG', 'Automobile', 'Healthcare', 'Metals', 'Services', 'Chemicals'];
-            const stocks = [
-                'HDFC Bank Ltd.', 'ICICI Bank Ltd.', 'Infosys Ltd.', 'Reliance Industries', 'Larsen & Toubro',
-                'ITC Ltd.', 'TCS Ltd.', 'Axis Bank Ltd.', 'Kotak Mahindra Bank', 'Bharti Airtel',
-                'State Bank of India', 'HCL Technologies', 'Tata Motors', 'Sun Pharma', 'Maruti Suzuki',
-                'Asian Paints', 'Titan Company', 'Bajaj Finance', 'UltraTech Cement', 'NTPC Ltd.',
-                'Power Grid Corp', 'Nestle India', 'Tata Steel', 'Wipro Ltd.', 'Mahindra & Mahindra',
-                'Coal India', 'Adani Ports', 'JSW Steel', 'Grasim Industries', 'Hindalco',
-                'Dr. Reddys Labs', 'Cipla Ltd.', 'Tech Mahindra', 'Divis Labs', 'Apollo Hospitals'
-            ];
-
-            const shuffled = [...stocks].sort(() => 0.5 - Math.random());
-            const count = 15 + Math.floor(Math.random() * 15);
-            const selected = shuffled.slice(0, count);
-
-            let remainingAllocation = 100;
-            return selected.map((name, index) => {
-                let allocation;
-                if (index === count - 1) {
-                    allocation = remainingAllocation;
-                } else {
-                    const max = remainingAllocation - (count - 1 - index) * 0.5;
-                    const base = Math.max(0.5, (10 - index * 0.3));
-                    allocation = Math.min(max, base + (Math.random() * 2));
-                    allocation = Math.round(allocation * 100) / 100;
-                }
-                remainingAllocation -= allocation;
-
-                return {
-                    name,
-                    sector: sectors[Math.floor(Math.random() * sectors.length)],
-                    allocation: allocation.toFixed(2),
-                    return1y: (Math.random() * 50 - 10).toFixed(2),
-                    return3y: (Math.random() * 80 - 10).toFixed(2),
-                    return1m: (Math.random() * 10 - 2).toFixed(2)
-                };
-            }).sort((a, b) => parseFloat(b.allocation) - parseFloat(a.allocation));
-        };
+        // No more simulated data - return empty when real data is unavailable
 
         let holdingsData = await getRealHoldings();
         let proxyError = null;

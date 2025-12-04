@@ -591,8 +591,8 @@ app.get('/api/holdings', async (req, res) => {
 
             // Construct slug based on available info
             if (!hasPlanInfo && !hasOptionInfo) {
-                // Default to direct-plan-growth which is most common
-                slug = `${baseSlug}-direct-plan-growth`;
+                // Default to direct-growth which is the correct Groww format
+                slug = `${baseSlug}-direct-growth`;
             } else if (!hasOptionInfo) {
                 // Has plan but no option, add growth
                 slug = `${baseSlug}-growth`;
