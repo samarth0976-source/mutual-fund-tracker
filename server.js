@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import NodeCache from 'node-cache';
-// import puppeteer from 'puppeteer'; // Removed unused puppeteer
+// Puppeteer removed - not used anymore
 import axios from 'axios';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -24,12 +24,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Health Check Endpoint for Render
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
+// Health check for Render
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// Serve static files from the React app
+// Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Secret key for JWT
@@ -51,16 +49,9 @@ const stockDetailsCache = new NodeCache({ stdTTL: 28800 }); // 8 hours for stock
 const MONGODB_URI = process.env.MONGODB_URI;
 let User = null;
 
-const connectDB = async () => {
-    if (!MONGODB_URI) {
-        console.log('ℹ️  No MONGODB_URI found, using file-based storage');
-        return;
-    }
-
+if (MONGODB_URI) {
     try {
-        await mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000 // Fail fast if cannot connect
-        });
+        await mongoose.connect(MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
         // Dynamically import User model only if MongoDB is connected
@@ -69,10 +60,9 @@ const connectDB = async () => {
     } catch (error) {
         console.warn('⚠️  MongoDB connection failed, using file-based storage:', error.message);
     }
-};
-
-// Start DB connection in background
-connectDB();
+} else {
+    console.log('ℹ️  No MONGODB_URI found, using file-based storage');
+}
 
 // News Scraper Setup
 let newsCache = [];
@@ -1174,208 +1164,12 @@ Respond in 3-4 short paragraphs. Be specific and actionable.`;
         console.error('AI analysis error:', error);
         res.status(500).json({
             error: 'AI analysis failed',
-```javascript
-                'x-client-secret': CASHFREE_SECRET.trim(),
-                'x-api-version': '2025-01-01',
-                'Accept': 'application/json'
-            }
-        };
-
-        console.log("Verifying payment...");
-
-        const cashfreeRequest = https.request(options, (cashfreeRes) => {
-            let data = '';
-
-            cashfreeRes.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            cashfreeRes.on('end', async () => {
-                try {
-                    const payments = JSON.parse(data);
-
-                    const successfulPayment = Array.isArray(payments) ?
-                        payments.find(payment => payment.payment_status === "SUCCESS") : null;
-
-                    if (successfulPayment) {
-                        const users = await readUsers();
-                        const userIndex = users.findIndex(u => u.id === req.user.id);
-
-                        if (userIndex !== -1) {
-                            const subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-                            users[userIndex].isPro = true;
-                            users[userIndex].subscriptionExpiry = subscriptionExpiry;
-                            await writeUsers(users);
-
-                            return res.json({
-                                success: true,
-                                message: "Subscription activated",
-                                user: {
-                                    id: users[userIndex].id,
-                                    username: users[userIndex].username,
-                                    email: users[userIndex].email,
-                                    isPro: true,
-                                    subscriptionExpiry: subscriptionExpiry,
-                                    daysRemaining: 30,
-                                    isGracePeriod: false
-                                }
-                            });
-                        }
-                    }
-
-                    res.json({ success: false, message: "Payment not verified" });
-                } catch (parseError) {
-                    console.error("Error parsing verification response:", parseError);
-                    res.status(500).json({ error: "Invalid response from payment gateway" });
-                }
-            });
-        });
-
-        cashfreeRequest.on('error', (error) => {
-            console.error("Request Error:", error);
-            res.status(500).json({ error: "Failed to connect to payment gateway" });
-        });
-
-        cashfreeRequest.end();
-
-    } catch (error) {
-        console.error("Error verifying payment:", error.message);
-        res.status(500).json({ error: "Verification failed" });
-    }
-});
-
-// Renewal endpoint
-app.post('/api/payment/renew', authenticateToken, async (req, res) => {
-    try {
-        const orderId = `RENEW_${ Date.now() }_${ Math.floor(Math.random() * 1000) }`;
-
-        const requestPayload = {
-            order_amount: 50.00,
-            order_currency: "INR",
-            order_id: orderId,
-            customer_details: {
-                customer_id: req.user.id,
-                customer_phone: "9999999999",
-                customer_name: req.user.username,
-                customer_email: req.user.email
-            },
-            order_meta: {
-                return_url: `https://www.cashfree.com/devstudio/preview/pg/web/popupCheckout?order_id=${orderId}`
-            }
-};
-
-const postData = JSON.stringify(requestPayload);
-
-const options = {
-    hostname: 'api.cashfree.com',
-    port: 443,
-    path: '/pg/orders',
-    method: 'POST',
-    headers: {
-        'x-client-id': CASHFREE_APP_ID.trim(),
-        'x-client-secret': CASHFREE_SECRET.trim(),
-        'x-api-version': '2025-01-01',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-    }
-};
-
-console.log("Creating Cashfree renewal order...");
-
-const cashfreeRequest = https.request(options, (cashfreeRes) => {
-    let data = '';
-
-    cashfreeRes.on('data', (chunk) => {
-        data += chunk;
-    });
-
-    cashfreeRes.on('end', () => {
-        try {
-            const responseData = JSON.parse(data);
-
-            if (cashfreeRes.statusCode === 200) {
-                console.log("Renewal Order Created Successfully");
-                res.json(responseData);
-            } else {
-                console.error("Cashfree Error:", responseData);
-                res.status(cashfreeRes.statusCode).json({ error: responseData.message || "Failed to create renewal order" });
-            }
-        } catch (parseError) {
-            console.error("Error parsing response:", parseError);
-            res.status(500).json({ error: "Invalid response from payment gateway" });
-        }
-    });
-});
-
-cashfreeRequest.on('error', (error) => {
-    console.error("Request Error:", error);
-    res.status(500).json({ error: "Failed to connect to payment gateway" });
-});
-
-cashfreeRequest.write(postData);
-cashfreeRequest.end();
-
-    } catch (error) {
-    console.error("Error creating renewal order:", error.message);
-    res.status(500).json({ error: "Failed to create renewal order" });
-}
-});
-
-// ============ GEMINI AI ROUTES ============
-
-app.post('/api/ai/analyze', authenticateToken, async (req, res) => {
-    try {
-        if (!genAI) {
-            return res.status(503).json({
-                error: 'AI service not configured',
-                message: 'Please add GEMINI_API_KEY to enable AI features'
-            });
-        }
-
-        const { fundName, fundData, userQuestion } = req.body;
-
-        if (!fundName) {
-            return res.status(400).json({ error: 'Fund name is required' });
-        }
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-        const prompt = `You are FundX AI, an expert mutual fund advisor. Analyze this mutual fund and provide concise, actionable insights.
-
-Fund Name: ${fundName}
-${fundData ? `
-NAV: ₹${fundData.nav || 'N/A'}
-1Y Return: ${fundData.oneYearReturn || 'N/A'}%
-3Y Return: ${fundData.threeYearReturn || 'N/A'}%
-Category: ${fundData.category || 'N/A'}
-AUM: ${fundData.aum || 'N/A'}
-` : ''}
-
-${userQuestion ? `User Question: ${userQuestion}` : 'Provide a comprehensive analysis covering performance, risk level, and suitability.'}
-
-Respond in 3-4 short paragraphs. Be specific and actionable.`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const analysis = response.text();
-
-        res.json({
-            analysis,
-            fundName,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('AI analysis error:', error);
-        res.status(500).json({
-            error: 'AI analysis failed',
             message: error.message
         });
     }
 });
 
-// Catch-all handler for any request that doesn't match an API route
+// Catch-all for React SPA
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
@@ -1383,4 +1177,3 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
-```
