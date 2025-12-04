@@ -25,6 +25,7 @@
     "mongoose": "^9.0.0",
     "node-cache": "^5.1.2",
     "node-cron": "^4.2.1",
+    "puppeteer": "^24.31.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",

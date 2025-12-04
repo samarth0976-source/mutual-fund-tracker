@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import NodeCache from 'node-cache';
-// Puppeteer removed - not used anymore
+import puppeteer from 'puppeteer';
 import axios from 'axios';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -151,6 +151,40 @@ updateNews(); // Initial fetch
 // Gemini AI Setup (optional)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 let genAI = null;
+
+// Puppeteer function to scrape Groww pages
+const fetchPageWithPuppeteer = async (url) => {
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
+            ],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+        });
+
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+        const nextData = await page.evaluate(() => {
+            const scriptTag = document.querySelector('#__NEXT_DATA__');
+            return scriptTag ? JSON.parse(scriptTag.textContent) : null;
+        });
+
+        await browser.close();
+        return nextData;
+    } catch (error) {
+        console.error('Puppeteer error:', error.message);
+        if (browser) await browser.close();
+        return null;
+    }
+};
 
 if (GEMINI_API_KEY) {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
