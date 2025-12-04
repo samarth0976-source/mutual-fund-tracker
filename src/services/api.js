@@ -79,7 +79,8 @@ export const getFundDetails = async (schemeCode) => {
 
                 const fetchHoldings = async (searchName) => {
                     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                    const url = `${API_URL}/api/holdings?name=${encodeURIComponent(searchName)}`;
+                    const schemeCode = data.meta.scheme_code || '';
+                    const url = `${API_URL}/api/holdings?name=${encodeURIComponent(searchName)}&schemeCode=${schemeCode}`;
                     const response = await fetch(url);
 
                     if (!response.ok) {

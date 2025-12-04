@@ -486,7 +486,7 @@ const processBatch = async (batch) => {
 };
 
 app.get('/api/holdings', async (req, res) => {
-    const { name } = req.query;
+    const { name, schemeCode } = req.query;  // Accept scheme code from frontend
     if (!name) {
         return res.status(400).json({ error: "Fund name is required" });
     }
@@ -571,7 +571,21 @@ app.get('/api/holdings', async (req, res) => {
             }
         }
 
-        // If no slug found after all strategies, return empty holdings instead of 404
+        // If no slug found after all strategies, try using scheme code or construct slug manually
+        if (!slug && schemeCode) {
+            // Try fetching directly using MFAPI scheme code as Groww slug
+            const possibleSlug = name
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+
+            console.log(`Attempting direct URL with constructed slug: ${possibleSlug}`);
+            slug = possibleSlug;
+            fundTitle = name;
+        }
+
         if (!slug) {
             console.log(`❌ Fund not found in Groww after trying all strategies: ${name}`);
             return res.json({
