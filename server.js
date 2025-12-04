@@ -52,6 +52,7 @@ const GROWW_SEARCH_URL = 'https://groww.in/v1/api/search/v3/query/global/st_quer
 const GROWW_HOLDINGS_URL = 'https://groww.in/v1/api/data/mf/web/v1/scheme/search_id/';
 
 // Caches with different TTLs for different data types
+// Last updated: 2025-12-04T18:06:00+05:30
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
 const holdingsCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for holdings
 const fundDetailsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for fund details
