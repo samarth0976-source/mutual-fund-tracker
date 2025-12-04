@@ -43,9 +43,16 @@ const stockDetailsCache = new NodeCache({ stdTTL: 28800 }); // 8 hours for stock
 const MONGODB_URI = process.env.MONGODB_URI;
 let User = null;
 
-if (MONGODB_URI) {
+const connectDB = async () => {
+    if (!MONGODB_URI) {
+        console.log('ℹ️  No MONGODB_URI found, using file-based storage');
+        return;
+    }
+
     try {
-        await mongoose.connect(MONGODB_URI);
+        await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000 // Fail fast if cannot connect
+        });
         console.log('✅ Connected to MongoDB');
 
         // Dynamically import User model only if MongoDB is connected
@@ -54,9 +61,10 @@ if (MONGODB_URI) {
     } catch (error) {
         console.warn('⚠️  MongoDB connection failed, using file-based storage:', error.message);
     }
-} else {
-    console.log('ℹ️  No MONGODB_URI found, using file-based storage');
-}
+};
+
+// Start DB connection in background
+connectDB();
 
 // News Scraper Setup
 let newsCache = [];
