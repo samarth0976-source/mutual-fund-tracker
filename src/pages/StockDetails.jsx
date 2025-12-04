@@ -72,6 +72,7 @@ const StockDetails = () => {
         return { value: change.toFixed(2), percent: percent.toFixed(2) };
     };
 
+    const navigate = useNavigate();
     const change = calculateChange();
     const isPositive = parseFloat(change.value) >= 0;
 
@@ -81,17 +82,13 @@ const StockDetails = () => {
         </div>
     );
 
-    if (error) return (
+    if (error || !stockData) return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
             <div className="text-red-500 text-xl font-bold mb-2">Error Loading Stock Data</div>
-            <p className="text-muted mb-4">{error}</p>
+            <p className="text-muted mb-4">{error || 'Stock data not available'}</p>
             <button onClick={() => navigate(-1)} className="text-primary hover:underline">Go Back</button>
         </div>
     );
-
-    const navigate = useNavigate();
-
-    if (!stockData) return null;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

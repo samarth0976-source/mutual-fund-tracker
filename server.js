@@ -30,6 +30,14 @@ app.get('/health', (req, res) => res.status(200).send('OK'));
 // Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Cache clear endpoint for debugging
+app.post('/api/cache/clear', (req, res) => {
+    holdingsCache.flushAll();
+    stockDetailsCache.flushAll();
+    console.log('All caches cleared');
+    res.json({ success: true, message: 'All caches cleared' });
+});
+
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -158,7 +166,7 @@ app.use(express.json());
 // Helper to fetch returns using TradingView API
 const fetchReturnsFromTV = async (stockName) => {
     return new Promise(async (resolve) => {
-        // console.log(`[TV] Searching for: ${stockName}`);
+        console.log(`[TV] Searching for: ${stockName}`);
 
         try {
             let searchResults = await TradingView.searchMarketV3(stockName);
@@ -197,7 +205,7 @@ const fetchReturnsFromTV = async (stockName) => {
             }
 
             const symbol = `${match.exchange}:${match.symbol}`;
-            // console.log(`[TV] Found symbol: ${symbol}`);
+            console.log(`[TV] Found symbol: ${symbol}`);
 
             const client = new TradingView.Client();
             const chart = new client.Session.Chart();
@@ -411,7 +419,7 @@ const processBatch = async (batch) => {
             }
 
             const cleanedName = cleanCompanyName(item.company_name);
-            // console.log(`Processing: ${cleanedName}`); // Reduce logging noise
+            console.log(`Processing: ${item.company_name} -> ${cleanedName}`);
 
             // Use TradingView
             realReturns = await fetchReturnsFromTV(cleanedName);
