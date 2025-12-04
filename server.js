@@ -575,8 +575,8 @@ app.get('/api/holdings', async (req, res) => {
             }
         }
 
-        // If no slug found after all strategies, try using scheme code or construct slug manually
-        if (!slug && schemeCode) {
+        // If no slug found after all strategies, construct slug manually
+        if (!slug) {
             // Try fetching directly using MFAPI scheme code as Groww slug
             const baseSlug = name
                 .toLowerCase()
@@ -585,28 +585,22 @@ app.get('/api/holdings', async (req, res) => {
                 .replace(/-+/g, '-')
                 .replace(/^-|-$/g, '');
 
-            // Try base slug and common variations
-            const slugVariations = [
-                baseSlug,
-                `${baseSlug}-direct-growth`,
-                `${baseSlug}-regular-growth`,
-                `${baseSlug}-direct-plan-growth`,
-                `${baseSlug}-regular-plan-growth`
-            ];
+            // Check if the name already includes plan/option info
+            const hasPlanInfo = name.toLowerCase().includes('direct') || name.toLowerCase().includes('regular');
+            const hasOptionInfo = name.toLowerCase().includes('growth') || name.toLowerCase().includes('dividend') || name.toLowerCase().includes('idcw');
 
-            for (const s of slugVariations) {
-                console.log(`Attempting direct URL with constructed slug: ${s}`);
-                // We'll just use the most likely one if it's a direct plan
-                if (name.toLowerCase().includes('direct')) {
-                    slug = s.includes('direct') ? s : `${baseSlug}-direct-growth`;
-                } else {
-                    slug = baseSlug;
-                }
-                fundTitle = name;
-                break;
+            // Construct slug based on available info
+            if (!hasPlanInfo && !hasOptionInfo) {
+                // Default to direct-plan-growth which is most common
+                slug = `${baseSlug}-direct-plan-growth`;
+            } else if (!hasOptionInfo) {
+                // Has plan but no option, add growth
+                slug = `${baseSlug}-growth`;
+            } else {
+                slug = baseSlug;
             }
-            // Force use of the constructed slug
-            if (!slug) slug = baseSlug;
+
+            fundTitle = name;
             console.log(`Using fallback slug: ${slug}`);
         }
 
