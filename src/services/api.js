@@ -151,7 +151,7 @@ export const getFundDetails = async (schemeCode) => {
 
         if (!holdingsData || holdingsData.error) {
             proxyError = holdingsData ? holdingsData.error : "Unknown error";
-            holdingsData = generateFallbackHoldings();
+            holdingsData = []; // Empty array instead of simulated data
         }
 
         if (holdingsData.holdings && Array.isArray(holdingsData.holdings)) {
