@@ -17,6 +17,7 @@ import * as cheerio from 'cheerio';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const TradingView = require('@mathieuc/tradingview');
+import { Redis } from '@upstash/redis';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,11 +32,23 @@ app.get('/health', (req, res) => res.status(200).send('OK'));
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Cache clear endpoint for debugging
-app.post('/api/cache/clear', (req, res) => {
+app.post('/api/cache/clear', async (req, res) => {
     holdingsCache.flushAll();
     stockDetailsCache.flushAll();
-    console.log('All caches cleared');
-    res.json({ success: true, message: 'All caches cleared' });
+    searchCache.flushAll();
+
+    // Clear Redis cache if available
+    if (redis) {
+        try {
+            await redis.flushall();
+            console.log('🗑️ Redis cache cleared');
+        } catch (error) {
+            console.warn('Failed to clear Redis:', error.message);
+        }
+    }
+
+    console.log('🗑️ All caches cleared');
+    res.json({ success: true, message: 'All caches cleared (Memory + Redis)' });
 });
 
 // Secret key for JWT
@@ -57,6 +70,53 @@ const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search res
 const holdingsCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for holdings
 const fundDetailsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for fund details
 const stockDetailsCache = new NodeCache({ stdTTL: 28800 }); // 8 hours for stock details
+
+// Upstash Redis Setup (persistent cache)
+let redis = null;
+const REDIS_TTL = 86400; // 24 hours in seconds
+
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+        redis = new Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        });
+        console.log('✅ Connected to Upstash Redis');
+    } catch (error) {
+        console.warn('⚠️  Redis connection failed, using in-memory cache:', error.message);
+    }
+} else {
+    console.log('ℹ️  No Redis credentials found, using in-memory cache only');
+}
+
+// Redis helper functions with NodeCache fallback
+const redisGet = async (key) => {
+    try {
+        if (redis) {
+            const data = await redis.get(key);
+            if (data) {
+                console.log(`📦 Redis HIT: ${key}`);
+                return data;
+            }
+        }
+    } catch (error) {
+        console.warn('Redis get error:', error.message);
+    }
+    return null;
+};
+
+const redisSet = async (key, value, ttl = REDIS_TTL) => {
+    try {
+        if (redis) {
+            await redis.set(key, value, { ex: ttl });
+            console.log(`💾 Redis SET: ${key} (TTL: ${ttl}s)`);
+            return true;
+        }
+    } catch (error) {
+        console.warn('Redis set error:', error.message);
+    }
+    return false;
+};
 
 // MongoDB Connection (optional - falls back to file-based if not configured)
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -493,21 +553,40 @@ app.get('/api/holdings', async (req, res) => {
 
     try {
         const holdingsCacheKey = `holdings_${name}`;
-        const cachedHoldings = holdingsCache.get(holdingsCacheKey);
 
+        // Check Redis first (persistent cache)
+        const redisData = await redisGet(holdingsCacheKey);
+        if (redisData) {
+            console.log(`Returning Redis cached holdings for: ${name}`);
+            return res.json({
+                ...redisData,
+                meta: {
+                    ...redisData.meta,
+                    cached: true,
+                    cacheSource: 'redis',
+                    cachedAt: redisData.meta.timestamp
+                }
+            });
+        }
+
+        // Check NodeCache as fallback
+        const cachedHoldings = holdingsCache.get(holdingsCacheKey);
         if (cachedHoldings) {
-            console.log(`Returning cached holdings for: ${name}`);
+            console.log(`Returning NodeCache holdings for: ${name}`);
+            // Also store in Redis for persistence
+            await redisSet(holdingsCacheKey, cachedHoldings);
             return res.json({
                 ...cachedHoldings,
                 meta: {
                     ...cachedHoldings.meta,
                     cached: true,
+                    cacheSource: 'memory',
                     cachedAt: cachedHoldings.meta.timestamp
                 }
             });
         }
 
-        console.log(`Fetching fresh data for: ${name}`);
+        console.log(`⚡ Fetching fresh data for: ${name}`);
 
         const headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -654,8 +733,10 @@ app.get('/api/holdings', async (req, res) => {
             }
         };
 
+        // Store in both Redis (persistent) and NodeCache (fast fallback)
+        await redisSet(holdingsCacheKey, response);
         holdingsCache.set(holdingsCacheKey, response);
-        console.log(`Cached holdings for: ${name}`);
+        console.log(`✅ Cached holdings for: ${name} (Redis + Memory)`);
 
         res.json(response);
 
