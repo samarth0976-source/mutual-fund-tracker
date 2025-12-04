@@ -1169,8 +1169,8 @@ Respond in 3-4 short paragraphs. Be specific and actionable.`;
     }
 });
 
-// Catch-all for React SPA
-app.get('*', (req, res) => {
+// SPA fallback - must be last route
+app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
