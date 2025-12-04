@@ -1,210 +1,134 @@
-import fs from 'fs/promises';
-import bcrypt from 'bcrypt';
+import 'dotenv/config';
+import mongoose from 'mongoose';
 import readline from 'readline';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import util from 'util';
-
-const execAsync = util.promisify(exec);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const USERS_FILE = path.join(__dirname, 'users.json');
+import bcrypt from 'bcrypt';
+import User from './models/User.js';
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+    console.error("❌ MONGODB_URI is missing in .env file");
+    process.exit(1);
+}
+
+const connectDB = async () => {
+    try {
+        await mongoose.connect(MONGODB_URI);
+        console.log('✅ Connected to MongoDB');
+    } catch (error) {
+        console.error('❌ MongoDB Connection Failed:', error.message);
+        process.exit(1);
+    }
+};
+
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
-const readUsers = async () => {
-    try {
-        const data = await fs.readFile(USERS_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch (error) {
-        return [];
-    }
-};
-
-const writeUsers = async (users) => {
-    await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-};
-
 const listUsers = async () => {
-    const users = await readUsers();
-    console.clear();
-    console.log('\n=== USER LIST ===');
+    const users = await User.find({});
+    console.log('\n--- User List ---');
     if (users.length === 0) {
-        console.log('No users found.');
+        console.log("No users found.");
     } else {
-        const tableData = users.map(u => ({
+        console.table(users.map(u => ({
+            ID: u._id.toString(),
             Username: u.username,
             Email: u.email,
-            'Is Pro?': u.isPro ? '✅ YES' : '❌ NO',
-            'Expiry': u.subscriptionExpiry ? new Date(u.subscriptionExpiry).toLocaleDateString() : 'N/A'
-        }));
-        console.table(tableData);
+            Pro: u.isPro ? '✅' : '❌',
+            Expiry: u.subscriptionExpiry ? new Date(u.subscriptionExpiry).toLocaleDateString() : 'N/A'
+        })));
     }
-    console.log('=================\n');
+    console.log('-----------------\n');
 };
 
-const createUser = async () => {
-    const users = await readUsers();
+const addUser = async () => {
+    const username = await question("Enter Username: ");
+    const email = await question("Enter Email: ");
+    const password = await question("Enter Password: ");
+    const isProInput = await question("Is Pro? (y/n): ");
+    const isPro = isProInput.toLowerCase() === 'y';
 
-    console.log('\n--- Create New User ---');
-    const username = await question('Username: ');
-    if (users.find(u => u.username === username)) {
-        console.log('❌ Username already exists.');
-        return;
-    }
-
-    const email = await question('Email: ');
-    if (users.find(u => u.email === email)) {
-        console.log('❌ Email already exists.');
-        return;
-    }
-
-    const password = await question('Password: ');
-    if (!password) {
-        console.log('❌ Password cannot be empty.');
-        return;
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = {
-        id: Date.now().toString(),
-        username,
-        email,
-        password: hashedPassword,
-        createdAt: new Date().toISOString(),
-        isPro: false
-    };
-
-    const makePro = await question('Should this user be Pro? (y/n): ');
-    if (makePro.toLowerCase() === 'y') {
-        newUser.isPro = true;
-        const expiry = new Date();
-        expiry.setFullYear(expiry.getFullYear() + 1);
-        newUser.subscriptionExpiry = expiry.toISOString();
-    }
-
-    users.push(newUser);
-    await writeUsers(users);
-    console.log(`✅ User '${username}' created successfully!`);
-};
-
-const changePassword = async () => {
-    const users = await readUsers();
-    const username = await question('Enter username to change password: ');
-
-    const userIndex = users.findIndex(u => u.username === username);
-    if (userIndex === -1) {
-        console.log(`❌ User '${username}' not found.`);
-        return;
-    }
-
-    const newPassword = await question(`Enter new password for ${username}: `);
-    if (!newPassword) {
-        console.log('❌ Password cannot be empty.');
-        return;
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    users[userIndex].password = hashedPassword;
-
-    await writeUsers(users);
-    console.log(`✅ Password updated for '${username}'!`);
-};
-
-const toggleProStatus = async () => {
-    const users = await readUsers();
-    const username = await question('Enter username to toggle Pro status: ');
-
-    const userIndex = users.findIndex(u => u.username === username);
-    if (userIndex === -1) {
-        console.log(`❌ User '${username}' not found.`);
-        return;
-    }
-
-    const user = users[userIndex];
-    const isNowPro = !user.isPro;
-
-    users[userIndex].isPro = isNowPro;
-
-    if (isNowPro) {
-        // Set expiry to 1 year from now by default
-        const expiry = new Date();
-        expiry.setFullYear(expiry.getFullYear() + 1);
-        users[userIndex].subscriptionExpiry = expiry.toISOString();
-        console.log(`✅ '${username}' is now PRO (Expires: ${expiry.toLocaleDateString()})`);
-    } else {
-        users[userIndex].subscriptionExpiry = null;
-        console.log(`✅ '${username}' is now FREE`);
-    }
-
-    await writeUsers(users);
-};
-
-const pushToGithub = async () => {
     try {
-        console.log('\n🔄 Staging users.json...');
-        await execAsync('git add users.json');
-
-        console.log('📦 Committing changes...');
-        await execAsync('git commit -m "chore: update users via CLI tool"');
-
-        console.log('🚀 Pushing to GitHub...');
-        await execAsync('git push origin main');
-
-        console.log('\n✅ Successfully pushed! The server will redeploy with new user data in a few minutes.');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            username,
+            email,
+            password: hashedPassword,
+            isPro,
+            subscriptionExpiry: isPro ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null // 30 days default
+        });
+        await newUser.save();
+        console.log(`✅ User ${username} added successfully!`);
     } catch (error) {
-        console.error('\n❌ Git Error:', error.message);
-        if (error.message.includes('nothing to commit')) {
-            console.log('  (This means there were no changes to save)');
+        console.error("❌ Error adding user:", error.message);
+    }
+};
+
+const togglePro = async () => {
+    const email = await question("Enter Email of user to toggle Pro status: ");
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        console.log("❌ User not found.");
+        return;
+    }
+
+    if (user.isPro) {
+        user.isPro = false;
+        user.subscriptionExpiry = null;
+        console.log(`🔻 Removed Pro status from ${user.username}`);
+    } else {
+        user.isPro = true;
+        // Set expiry to 1 year from now
+        user.subscriptionExpiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+        console.log(`⭐ Upgraded ${user.username} to Pro (Expiry: 1 year)`);
+    }
+
+    await user.save();
+};
+
+const deleteUser = async () => {
+    const email = await question("Enter Email of user to DELETE: ");
+    const confirm = await question(`Are you sure you want to delete ${email}? (yes/no): `);
+
+    if (confirm.toLowerCase() === 'yes') {
+        const result = await User.deleteOne({ email });
+        if (result.deletedCount > 0) {
+            console.log(`🗑️  User ${email} deleted.`);
+        } else {
+            console.log("❌ User not found.");
         }
+    } else {
+        console.log("Cancelled.");
     }
 };
 
 const main = async () => {
+    await connectDB();
+
     while (true) {
-        console.log('\n--- User Management Menu ---');
-        console.log('1. List Users');
-        console.log('2. Create New User');
-        console.log('3. Change User Password');
-        console.log('4. Toggle Pro/Free Status');
-        console.log('5. Save & Push to GitHub (Deploy)');
-        console.log('6. Exit');
+        console.log("\n1. List Users");
+        console.log("2. Add User");
+        console.log("3. Toggle Pro Status");
+        console.log("4. Delete User");
+        console.log("5. Exit");
 
-        const choice = await question('\nEnter choice (1-6): ');
+        const choice = await question("Choose an option: ");
 
-        try {
-            switch (choice) {
-                case '1':
-                    await listUsers();
-                    break;
-                case '2':
-                    await createUser();
-                    break;
-                case '3':
-                    await changePassword();
-                    break;
-                case '4':
-                    await toggleProStatus();
-                    break;
-                case '5':
-                    await pushToGithub();
-                    break;
-                case '6':
-                    console.log('Goodbye!');
-                    rl.close();
-                    return;
-                default:
-                    console.log('Invalid choice.');
-            }
-        } catch (error) {
-            console.error('An error occurred:', error.message);
+        switch (choice) {
+            case '1': await listUsers(); break;
+            case '2': await addUser(); break;
+            case '3': await togglePro(); break;
+            case '4': await deleteUser(); break;
+            case '5':
+                console.log("Bye!");
+                await mongoose.disconnect();
+                process.exit(0);
+            default: console.log("Invalid option.");
         }
     }
 };
