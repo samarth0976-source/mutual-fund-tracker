@@ -179,7 +179,7 @@ export const getFundDetails = async (schemeCode) => {
                 };
             }),
             holdings: holdingsData,
-            isRealData: !proxyError,
+            isRealData: !proxyError && holdingsData.filter(h => h.isReal).length >= holdingsData.length * 0.5,
             proxyError: proxyError
         };
     } catch (error) {
