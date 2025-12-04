@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown, Activity, DollarSign, Calendar } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -89,13 +89,15 @@ const StockDetails = () => {
         </div>
     );
 
+    const navigate = useNavigate();
+
     if (!stockData) return null;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-            </Link>
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Back
+            </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Chart Section */}

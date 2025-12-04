@@ -183,7 +183,7 @@ const fetchReturnsFromTV = async (stockName) => {
                 console.log(`[TV] Timeout for ${symbol}`);
                 client.end();
                 resolve(null);
-            }, 10000);
+            }, 3000);
 
             chart.onUpdate(() => {
                 if (!chart.periods || chart.periods.length === 0) return;
@@ -329,83 +329,56 @@ const fetchStockDetailsFromTV = async (stockName) => {
     });
 };
 
-// Helper to fetch page with Puppeteer
-const fetchPageWithPuppeteer = async (url) => {
-    console.log(`Fetching page with Puppeteer: ${url}`);
-
-    const launchOptions = {
-        headless: "new",
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage', // Important for Docker
-            '--disable-gpu'
-        ]
-    };
-
-    // Use system Chromium if specified (for Docker)
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-        launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-
-    const browser = await puppeteer.launch(launchOptions);
-    const page = await browser.newPage();
-    try {
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-
-        const nextData = await page.evaluate(() => {
-            const script = document.getElementById('__NEXT_DATA__');
-            return script ? JSON.parse(script.innerHTML) : null;
-        });
-        return nextData;
-    } catch (e) {
-        console.error("Puppeteer error:", e.message);
-        return null;
-    } finally {
-        await browser.close();
-    }
-};
-
-const BATCH_SIZE = 20; // Increased batch size for faster loading
-const DELAY_MS = 200; // Reduced delay
-const GROWW_SEARCH_URL = "https://groww.in/v1/api/search/v1/entity?app=false&page=0&q=";
+const BATCH_SIZE = 25; // Further increased batch size
+const DELAY_MS = 100; // Minimal delay
 
 const cleanCompanyName = (name) => {
     if (!name) return "";
-    // Remove common noise and fix concatenation issues if any
     let cleaned = name.trim();
-    // If name is very long and has multiple "Ltd", it might be concatenated. 
-    // Heuristic: Split by 'Ltd.' and take the first part + 'Ltd.'
-    if (cleaned.match(/Ltd\./g)?.length > 1) {
-        cleaned = cleaned.split('Ltd.')[0] + 'Ltd.';
-    }
-    return cleaned;
+
+    // Remove common suffixes that confuse search
+    cleaned = cleaned.replace(/\s+Ltd\.?$/i, '')
+        .replace(/\s+Limited$/i, '')
+        .replace(/\s+India$/i, '')
+        .replace(/\s+Inds\.?$/i, '')
+        .replace(/\s+Industries$/i, '')
+        .replace(/\s+Holdings$/i, '')
+        .replace(/\s+Enterprises$/i, '')
+        .replace(/\s+Corporation$/i, '')
+        .replace(/\s+Corp\.?$/i, '');
+
+    // Fix specific known issues
+    if (cleaned.includes("Mahindra & Mahindra")) return "M&M";
+
+    return cleaned.trim();
 };
 
 const processBatch = async (batch) => {
     return Promise.all(batch.map(async (item) => {
-        console.log(`Processing item: ${item.company_name}`);
         let realReturns = null;
         try {
             if (!item.company_name) {
-                console.warn("Item missing company_name:", item);
                 throw new Error("Missing company_name");
             }
 
             const cleanedName = cleanCompanyName(item.company_name);
-            console.log(`Processing item: ${cleanedName} (Raw: ${item.company_name})`);
+            // console.log(`Processing: ${cleanedName}`); // Reduce logging noise
 
-            // Use TradingView instead of Yahoo
+            // Use TradingView
             realReturns = await fetchReturnsFromTV(cleanedName);
 
+            // Retry with raw name if cleaned failed and they are different
+            if (!realReturns && cleanedName !== item.company_name) {
+                // console.log(`Retrying with raw name: ${item.company_name}`);
+                realReturns = await fetchReturnsFromTV(item.company_name);
+            }
+
         } catch (e) {
-            console.error(`Error processing ${item.company_name}:`, e.message);
+            // console.error(`Error processing ${item.company_name}:`, e.message);
         }
 
-        console.log(`Finished item: ${item.company_name}`);
         return {
-            name: cleanCompanyName(item.company_name) || "Unknown",
+            name: item.company_name || "Unknown",
             sector: item.sector_name || "Equity",
             allocation: item.corpus_per ? item.corpus_per.toFixed(2) : "0.00",
             return1y: realReturns?.return1y || null,
