@@ -152,24 +152,46 @@ app.use(express.json());
 // Helper to fetch returns using TradingView API
 const fetchReturnsFromTV = async (stockName) => {
     return new Promise(async (resolve) => {
-        console.log(`[TV] Searching for: ${stockName}`);
+        // console.log(`[TV] Searching for: ${stockName}`);
 
         try {
-            // Search for the symbol
-            const searchResults = await TradingView.searchMarketV3(stockName);
+            let searchResults = await TradingView.searchMarketV3(stockName);
 
-            if (!searchResults || searchResults.length === 0) {
-                console.log(`[TV] No symbol found for: ${stockName}`);
-                return resolve(null);
+            // Helper to check for Indian exchanges
+            const findIndianStock = (results) => {
+                if (!results) return null;
+                return results.find(s => s.exchange === 'NSE') || results.find(s => s.exchange === 'BSE');
+            };
+
+            let match = findIndianStock(searchResults);
+
+            // Retry with shorter names if no Indian stock found
+            if (!match) {
+                const words = stockName.split(' ');
+
+                // Try first 2 words
+                if (words.length > 2) {
+                    const shortName = words.slice(0, 2).join(' ');
+                    const results2 = await TradingView.searchMarketV3(shortName);
+                    match = findIndianStock(results2);
+                }
+
+                // Try first 1 word
+                if (!match && words.length > 1) {
+                    const shortName = words[0];
+                    const results3 = await TradingView.searchMarketV3(shortName);
+                    match = findIndianStock(results3);
+                }
             }
 
-            // Prioritize NSE/BSE symbols
-            const match = searchResults.find(s => s.exchange === 'NSE') ||
-                searchResults.find(s => s.exchange === 'BSE') ||
-                searchResults[0];
+            if (!match) {
+                // Fallback to first result if it exists
+                match = searchResults && searchResults.length > 0 ? searchResults[0] : null;
+                if (!match) return resolve(null);
+            }
 
             const symbol = `${match.exchange}:${match.symbol}`;
-            console.log(`[TV] Found symbol: ${symbol}`);
+            // console.log(`[TV] Found symbol: ${symbol}`);
 
             const client = new TradingView.Client();
             const chart = new client.Session.Chart();
@@ -181,7 +203,6 @@ const fetchReturnsFromTV = async (stockName) => {
 
             // Set a timeout to avoid hanging
             const timeout = setTimeout(() => {
-                console.log(`[TV] Timeout for ${symbol}`);
                 client.end();
                 resolve(null);
             }, 3000);
@@ -231,15 +252,12 @@ const fetchReturnsFromTV = async (stockName) => {
                     return3y: calculateReturn(currentPrice, p3y)?.toFixed(2) || null
                 };
 
-                console.log(`[TV] Returns for ${symbol}:`, returns);
-
                 clearTimeout(timeout);
                 client.end();
                 resolve(returns);
             });
 
             chart.onError((...err) => {
-                console.error(`[TV] Chart error for ${symbol}:`, ...err);
                 clearTimeout(timeout);
                 client.end();
                 resolve(null);
@@ -258,15 +276,39 @@ const fetchStockDetailsFromTV = async (stockName) => {
         console.log(`[TV] Fetching details for: ${stockName}`);
 
         try {
-            const searchResults = await TradingView.searchMarketV3(stockName);
+            let searchResults = await TradingView.searchMarketV3(stockName);
 
-            if (!searchResults || searchResults.length === 0) {
-                return resolve(null);
+            // Helper to check for Indian exchanges
+            const findIndianStock = (results) => {
+                if (!results) return null;
+                return results.find(s => s.exchange === 'NSE') || results.find(s => s.exchange === 'BSE');
+            };
+
+            let match = findIndianStock(searchResults);
+
+            // Retry with shorter names if no Indian stock found
+            if (!match) {
+                const words = stockName.split(' ');
+
+                // Try first 2 words
+                if (words.length > 2) {
+                    const shortName = words.slice(0, 2).join(' ');
+                    const results2 = await TradingView.searchMarketV3(shortName);
+                    match = findIndianStock(results2);
+                }
+
+                // Try first 1 word
+                if (!match && words.length > 1) {
+                    const shortName = words[0];
+                    const results3 = await TradingView.searchMarketV3(shortName);
+                    match = findIndianStock(results3);
+                }
             }
 
-            const match = searchResults.find(s => s.exchange === 'NSE') ||
-                searchResults.find(s => s.exchange === 'BSE') ||
-                searchResults[0];
+            if (!match) {
+                match = searchResults && searchResults.length > 0 ? searchResults[0] : null;
+                if (!match) return resolve(null);
+            }
 
             const symbol = `${match.exchange}:${match.symbol}`;
             console.log(`[TV] Found symbol: ${symbol}`);
