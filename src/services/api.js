@@ -152,7 +152,8 @@ export const getFundDetails = async (schemeCode) => {
 
         if (!holdingsData || holdingsData.error) {
             proxyError = holdingsData ? holdingsData.error : "Unknown error";
-            holdingsData = []; // Empty array instead of simulated data
+            console.warn("Holdings fetch failed, returning empty array");
+            holdingsData = [];
         }
 
         if (holdingsData.holdings && Array.isArray(holdingsData.holdings)) {
