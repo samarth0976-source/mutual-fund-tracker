@@ -1354,6 +1354,111 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Cache Warming - Pre-fetch popular funds on startup
+const POPULAR_FUNDS = [
+    'Tata Nifty Auto Index Fund',
+    'ICICI Prudential Bluechip Fund',
+    'SBI Bluechip Fund',
+    'HDFC Top 100 Fund',
+    'Axis Bluechip Fund',
+    'Mirae Asset Large Cap Fund',
+    'Kotak Bluechip Fund',
+    'Nippon India Large Cap Fund'
+];
+
+const warmCache = async () => {
+    if (!redis) {
+        console.log('⚠️ Redis not available, skipping cache warming');
+        return;
+    }
+
+    console.log('🔥 Starting cache warming for popular funds...');
+
+    for (const fundName of POPULAR_FUNDS) {
+        const cacheKey = `holdings_${fundName}`;
+
+        // Check if already cached
+        const existing = await redisGet(cacheKey);
+        if (existing) {
+            console.log(`✅ Already cached: ${fundName}`);
+            continue;
+        }
+
+        try {
+            console.log(`📥 Pre-fetching: ${fundName}`);
+
+            // Make internal fetch to our own holdings endpoint
+            const baseSlug = fundName
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+
+            const slug = `${baseSlug}-direct-growth`;
+            const pageUrl = `https://groww.in/mutual-funds/${slug}`;
+
+            const nextData = await fetchPageWithPuppeteer(pageUrl);
+
+            if (nextData) {
+                const findKey = (obj, key) => {
+                    if (obj && typeof obj === 'object') {
+                        if (obj[key]) return obj[key];
+                        for (const k in obj) {
+                            const result = findKey(obj[k], key);
+                            if (result) return result;
+                        }
+                    }
+                    return null;
+                };
+
+                const holdingsRaw = findKey(nextData, "holdings");
+
+                if (holdingsRaw && Array.isArray(holdingsRaw)) {
+                    const holdings = holdingsRaw.map(item => ({
+                        name: item.company_name || "Unknown",
+                        sector: item.sector_name || "Equity",
+                        allocation: item.corpus_per ? item.corpus_per.toFixed(2) : "0.00"
+                    }));
+
+                    const response = {
+                        holdings,
+                        meta: {
+                            fund: fundName,
+                            totalHoldings: holdings.length,
+                            dataSource: 'Groww (Pre-cached)',
+                            timestamp: new Date().toISOString()
+                        }
+                    };
+
+                    await redisSet(cacheKey, response);
+                    console.log(`✅ Pre-cached: ${fundName} (${holdings.length} holdings)`);
+                }
+            }
+
+            // Wait between requests to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+        } catch (error) {
+            console.warn(`❌ Failed to pre-cache ${fundName}:`, error.message);
+        }
+    }
+
+    console.log('🔥 Cache warming complete!');
+};
+
+// Run cache warming on startup (delayed to let server boot first)
+setTimeout(() => {
+    warmCache().catch(err => console.error('Cache warming error:', err));
+}, 10000); // Wait 10 seconds after startup
+
+// Run cache warming daily at 6 AM IST (00:30 UTC)
+cron.schedule('30 0 * * *', () => {
+    console.log('🔄 Running daily cache refresh...');
+    warmCache().catch(err => console.error('Daily cache refresh error:', err));
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log(`🚀 Cache warming will start in 10 seconds...`);
 });
