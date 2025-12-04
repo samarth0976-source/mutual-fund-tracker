@@ -753,6 +753,206 @@ app.get('/api/stock/details', async (req, res) => {
     }
 });
 
+// ============ TOP FUNDS PRE-CALCULATION ============
+
+const MFAPI_BASE = 'https://api.mfapi.in/mf';
+const TOP_FUNDS_CACHE_KEY = 'top_funds_calculated';
+const TOP_FUNDS_TTL = 86400; // 24 hours
+
+// Calculate returns from NAV history
+const calculateReturns = (navHistory) => {
+    if (!navHistory || navHistory.length < 2) return null;
+
+    const currentNav = parseFloat(navHistory[0].nav);
+
+    const getNavAtDays = (days) => {
+        if (navHistory.length <= days) return parseFloat(navHistory[navHistory.length - 1].nav);
+        return parseFloat(navHistory[Math.min(days, navHistory.length - 1)].nav);
+    };
+
+    const calcReturn = (days) => {
+        const pastNav = getNavAtDays(days);
+        if (!pastNav || pastNav === 0) return 0;
+        return (((currentNav - pastNav) / pastNav) * 100);
+    };
+
+    return {
+        '1M': calcReturn(22),   // ~22 trading days
+        '3M': calcReturn(66),   // ~66 trading days
+        '6M': calcReturn(130),  // ~130 trading days  
+        '1Y': calcReturn(252),  // ~252 trading days
+    };
+};
+
+// Fetch fund details and calculate returns
+const fetchFundWithReturns = async (schemeCode) => {
+    try {
+        const response = await axios.get(`${MFAPI_BASE}/${schemeCode}`, { timeout: 5000 });
+        const data = response.data;
+
+        if (!data || !data.data || !data.meta) return null;
+
+        const returns = calculateReturns(data.data);
+        if (!returns) return null;
+
+        return {
+            id: schemeCode,
+            name: data.meta.scheme_name,
+            category: data.meta.fund_house,
+            nav: parseFloat(data.data[0]?.nav || 0),
+            returns,
+            sixMonthReturn: returns['6M']
+        };
+    } catch (error) {
+        // Silently fail for individual funds
+        return null;
+    }
+};
+
+// Pre-calculate top funds and store in Redis
+const calculateTopFunds = async () => {
+    console.log('🔄 Starting top funds calculation...');
+
+    try {
+        // Get list of all funds from MFAPI
+        const listResponse = await axios.get(MFAPI_BASE, { timeout: 10000 });
+        const allFunds = listResponse.data;
+
+        if (!allFunds || !Array.isArray(allFunds)) {
+            console.error('Failed to fetch fund list');
+            return null;
+        }
+
+        console.log(`📊 Processing ${Math.min(500, allFunds.length)} funds...`);
+
+        // Sample 500 funds (to avoid rate limits)
+        // Prioritize Direct Growth plans
+        const directGrowthFunds = allFunds.filter(f =>
+            f.schemeName.toLowerCase().includes('direct') &&
+            f.schemeName.toLowerCase().includes('growth')
+        ).slice(0, 500);
+
+        const fundsToProcess = directGrowthFunds.length >= 100
+            ? directGrowthFunds
+            : allFunds.slice(0, 500);
+
+        // Process in batches to avoid rate limits
+        const BATCH_SIZE = 10;
+        const DELAY_BETWEEN_BATCHES = 1000; // 1 second
+        const processedFunds = [];
+
+        for (let i = 0; i < fundsToProcess.length; i += BATCH_SIZE) {
+            const batch = fundsToProcess.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map(f => fetchFundWithReturns(f.schemeCode));
+            const batchResults = await Promise.all(batchPromises);
+
+            processedFunds.push(...batchResults.filter(f => f !== null));
+
+            // Progress log every 100 funds
+            if ((i + BATCH_SIZE) % 100 === 0) {
+                console.log(`📈 Processed ${i + BATCH_SIZE}/${fundsToProcess.length} funds`);
+            }
+
+            // Delay between batches
+            if (i + BATCH_SIZE < fundsToProcess.length) {
+                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+            }
+        }
+
+        // Sort by 6-month return and take top 50
+        const topFunds = processedFunds
+            .filter(f => f && typeof f.sixMonthReturn === 'number' && !isNaN(f.sixMonthReturn))
+            .sort((a, b) => b.sixMonthReturn - a.sixMonthReturn)
+            .slice(0, 50)
+            .map((f, index) => ({
+                ...f,
+                rank: index + 1,
+                returns: {
+                    '1M': f.returns['1M']?.toFixed(2) || '0.00',
+                    '3M': f.returns['3M']?.toFixed(2) || '0.00',
+                    '6M': f.returns['6M']?.toFixed(2) || '0.00',
+                    '1Y': f.returns['1Y']?.toFixed(2) || '0.00'
+                }
+            }));
+
+        const result = {
+            funds: topFunds,
+            meta: {
+                totalProcessed: processedFunds.length,
+                timestamp: new Date().toISOString(),
+                source: 'MFAPI (pre-calculated)'
+            }
+        };
+
+        // Store in Redis
+        await redisSet(TOP_FUNDS_CACHE_KEY, result, TOP_FUNDS_TTL);
+        console.log(`✅ Top funds calculated: ${topFunds.length} funds stored in cache`);
+
+        return result;
+    } catch (error) {
+        console.error('Top funds calculation error:', error.message);
+        return null;
+    }
+};
+
+// API endpoint for top funds
+app.get('/api/top-funds', async (req, res) => {
+    const { limit = 20, sortBy = '6M' } = req.query;
+
+    try {
+        // Check Redis cache first
+        let topFundsData = await redisGet(TOP_FUNDS_CACHE_KEY);
+
+        if (!topFundsData) {
+            console.log('📦 Cache miss, calculating top funds...');
+            topFundsData = await calculateTopFunds();
+
+            if (!topFundsData) {
+                return res.status(500).json({ error: 'Failed to calculate top funds' });
+            }
+        } else {
+            console.log('📦 Returning cached top funds');
+        }
+
+        // Sort by requested period
+        let sortedFunds = [...topFundsData.funds];
+        if (sortBy && ['1M', '3M', '6M', '1Y'].includes(sortBy)) {
+            sortedFunds.sort((a, b) =>
+                parseFloat(b.returns[sortBy]) - parseFloat(a.returns[sortBy])
+            );
+        }
+
+        res.json({
+            funds: sortedFunds.slice(0, parseInt(limit)),
+            meta: {
+                ...topFundsData.meta,
+                sortedBy: sortBy,
+                limit: parseInt(limit)
+            }
+        });
+    } catch (error) {
+        console.error('Top funds API error:', error.message);
+        res.status(500).json({ error: 'Failed to fetch top funds' });
+    }
+});
+
+// Trigger recalculation endpoint (for manual refresh)
+app.post('/api/top-funds/refresh', async (req, res) => {
+    console.log('🔄 Manual top funds refresh triggered');
+    const result = await calculateTopFunds();
+    if (result) {
+        res.json({ success: true, message: `Recalculated ${result.funds.length} top funds` });
+    } else {
+        res.status(500).json({ error: 'Recalculation failed' });
+    }
+});
+
+// Schedule daily recalculation at 5 AM IST (23:30 UTC previous day)
+cron.schedule('30 23 * * *', () => {
+    console.log('🌅 Running daily top funds recalculation...');
+    calculateTopFunds().catch(err => console.error('Daily recalc error:', err));
+});
+
 // ============ AUTHENTICATION SYSTEM ============
 
 const readUsers = async () => {

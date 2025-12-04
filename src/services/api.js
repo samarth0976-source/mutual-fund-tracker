@@ -1,23 +1,42 @@
 const BASE_URL = "https://api.mfapi.in/mf";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 let fundsCache = null;
 
-export const getTopMutualFunds = async (limit = 10) => {
+export const getTopMutualFunds = async (limit = 20, sortBy = '6M') => {
     try {
-        if (!fundsCache) {
-            const response = await fetch(BASE_URL);
-            if (!response.ok) throw new Error('Failed to fetch funds');
-            fundsCache = await response.json();
+        // Use pre-calculated top funds from backend
+        const response = await fetch(`${BACKEND_URL}/api/top-funds?limit=${limit}&sortBy=${sortBy}`);
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.funds && Array.isArray(data.funds)) {
+                return data.funds.map(fund => ({
+                    id: fund.id,
+                    name: fund.name,
+                    category: fund.category,
+                    nav: fund.nav,
+                    rating: Math.floor(Math.random() * 2) + 4,
+                    returns: fund.returns,
+                    rank: fund.rank
+                }));
+            }
         }
 
-        // Return ALL mutual funds (not filtered), limited by the limit parameter
+        // Fallback to basic MFAPI if backend fails
+        console.warn("Top funds API failed, using basic fund list");
+        if (!fundsCache) {
+            const fallbackResponse = await fetch(BASE_URL);
+            if (!fallbackResponse.ok) throw new Error('Failed to fetch funds');
+            fundsCache = await fallbackResponse.json();
+        }
         return fundsCache.slice(0, limit).map(fund => ({
             id: fund.schemeCode,
             name: fund.schemeName,
             rating: Math.floor(Math.random() * 2) + 4
         }));
     } catch (error) {
-        console.error("Error fetching mutual funds:", error);
+        console.error("Error fetching top mutual funds:", error);
         return [];
     }
 };
