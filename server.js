@@ -513,43 +513,77 @@ app.get('/api/holdings', async (req, res) => {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         };
 
+        // Clean fund name for better Groww search results
+        const cleanFundName = (name) => {
+            return name
+                .replace(/\bDirect\s+Plan\b/gi, '')
+                .replace(/\bRegular\s+Plan\b/gi, '')
+                .replace(/\bGrowth\b/gi, '')
+                .replace(/\bDividend\b/gi, '')
+                .replace(/\bIDCW\b/gi, '')
+                .replace(/\bOption\b/gi, '')
+                .replace(/\bFund\b/gi, '')
+                .replace(/\bScheme\b/gi, '')
+                .replace(/\bRetail\b/gi, '')
+                .replace(/\bInstitutional\b/gi, '')
+                .replace(/\s+-\s+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
         let slug;
         let fundTitle = name;
+        const cleanedName = cleanFundName(name);
+
+        // Try multiple search strategies
+        const searchStrategies = [
+            cleanedName,
+            cleanedName.split(' ').slice(0, 4).join(' '),  // First 4 words
+            cleanedName.split(' ').slice(0, 3).join(' '),  // First 3 words
+            cleanedName.split(' ').slice(0, 2).join(' ')   // First 2 words
+        ].filter(s => s.length > 3); // Only try searches with reasonable length
         const cacheKey = `search_${name}`;
         const cachedSlug = searchCache.get(cacheKey);
 
         if (cachedSlug) {
             console.log(`Using cached slug for: ${name}`);
             slug = cachedSlug;
+            fundTitle = cachedSlug.title || name;
         } else {
-            try {
-                const searchResponse = await axios.get(`${GROWW_SEARCH_URL}${encodeURIComponent(name)}`, { headers });
-                if (searchResponse.data && searchResponse.data.content && searchResponse.data.content.length > 0) {
-                    const fund = searchResponse.data.content[0];
-                    slug = fund.search_id;
-                    fundTitle = fund.title || name;
-                    searchCache.set(cacheKey, slug);
-                    console.log(`Found fund: ${fund.title} (Slug: ${slug})`);
-                }
-            } catch (err) {
-                if (err.response && err.response.status === 429) {
-                    console.warn("Groww Search Rate Limit (429). Using fallback if available.");
-                    if (name.toLowerCase().includes("quant small cap")) {
-                        slug = "quant-small-cap-fund-direct-plan-growth";
-                        fundTitle = "Quant Small Cap Fund Direct Plan Growth";
-                        console.log("Using hardcoded fallback slug for Quant Small Cap");
-                    } else {
-                        throw err;
+            // Try each search strategy until we find a result
+            for (const searchQuery of searchStrategies) {
+                try {
+                    console.log(`Trying search: ${searchQuery}`);
+                    const searchResponse = await axios.get(`${GROWW_SEARCH_URL}${encodeURIComponent(searchQuery)}`, { headers });
+
+                    if (searchResponse.data && searchResponse.data.content && searchResponse.data.content.length > 0) {
+                        const fund = searchResponse.data.content[0];
+                        slug = fund.search_id;
+                        fundTitle = fund.title || name;
+                        searchCache.set(cacheKey, { slug, title: fundTitle });
+                        console.log(`✅ Found fund: ${fundTitle} (Slug: ${slug})`);
+                        break; // Success! Exit loop
                     }
-                } else {
-                    throw err;
+                } catch (err) {
+                    console.warn(`Search failed for "${searchQuery}":`, err.message);
+                    continue; // Try next strategy
                 }
             }
         }
 
+        // If no slug found after all strategies, return empty holdings instead of 404
         if (!slug) {
-            console.log(`Fund not found in search: ${name}`);
-            return res.status(404).json({ error: "Fund not found" });
+            console.log(`❌ Fund not found in Groww after trying all strategies: ${name}`);
+            return res.json({
+                holdings: [],
+                meta: {
+                    fund: name,
+                    totalHoldings: 0,
+                    dataSource: 'Not Available',
+                    timestamp: new Date().toISOString(),
+                    message: 'Holdings data not available for this fund on Groww'
+                }
+            });
         }
 
         const pageUrl = `https://groww.in/mutual-funds/${slug}`;
