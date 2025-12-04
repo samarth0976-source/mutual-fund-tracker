@@ -585,14 +585,42 @@ app.post('/api/auth/signup', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // MongoDB Path
+        if (User) {
+            const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+            if (existingUser) {
+                return res.status(400).json({ error: 'User already exists' });
+            }
+
+            const newUser = new User({
+                username,
+                email,
+                password: hashedPassword
+            });
+
+            await newUser.save();
+
+            const token = jwt.sign(
+                { id: newUser._id, username: newUser.username, email: newUser.email, isPro: newUser.isPro },
+                JWT_SECRET,
+                { expiresIn: '7d' }
+            );
+
+            return res.json({
+                token,
+                user: { id: newUser._id, username: newUser.username, email: newUser.email, isPro: newUser.isPro }
+            });
+        }
+
+        // File-based Fallback
         const users = await readUsers();
         const existingUser = users.find(u => u.email === email || u.username === username);
 
         if (existingUser) {
             return res.status(400).json({ error: 'User already exists' });
         }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = {
             id: Date.now().toString(),
@@ -630,8 +658,18 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Credentials required' });
         }
 
-        const users = await readUsers();
-        const user = users.find(u => u.email === emailOrUsername || u.username === emailOrUsername);
+        let user;
+
+        // MongoDB Path
+        if (User) {
+            user = await User.findOne({
+                $or: [{ email: emailOrUsername }, { username: emailOrUsername }]
+            });
+        } else {
+            // File-based Fallback
+            const users = await readUsers();
+            user = users.find(u => u.email === emailOrUsername || u.username === emailOrUsername);
+        }
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -642,15 +680,17 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        const userId = user._id || user.id;
+
         const token = jwt.sign(
-            { id: user.id, username: user.username, email: user.email, isPro: user.isPro || false },
+            { id: userId, username: user.username, email: user.email, isPro: user.isPro || false },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
 
         res.json({
             token,
-            user: { id: user.id, username: user.username, email: user.email, isPro: user.isPro || false }
+            user: { id: userId, username: user.username, email: user.email, isPro: user.isPro || false }
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -670,13 +710,20 @@ const checkAndUpdateSubscription = async (user) => {
 
     // If past grace period, downgrade to free
     if (now > gracePeriodEnd) {
-        const users = await readUsers();
-        const userIndex = users.findIndex(u => u.id === user.id);
-        if (userIndex !== -1) {
-            users[userIndex].isPro = false;
-            users[userIndex].subscriptionExpiry = null;
-            await writeUsers(users);
-            return users[userIndex];
+        if (User && user instanceof User) {
+            user.isPro = false;
+            user.subscriptionExpiry = null;
+            await user.save();
+            return user;
+        } else {
+            const users = await readUsers();
+            const userIndex = users.findIndex(u => u.id === user.id);
+            if (userIndex !== -1) {
+                users[userIndex].isPro = false;
+                users[userIndex].subscriptionExpiry = null;
+                await writeUsers(users);
+                return users[userIndex];
+            }
         }
     }
 
@@ -684,8 +731,21 @@ const checkAndUpdateSubscription = async (user) => {
 };
 
 app.get('/api/auth/user', authenticateToken, async (req, res) => {
-    const users = await readUsers();
-    let user = users.find(u => u.id === req.user.id);
+    let user;
+
+    if (User) {
+        try {
+            user = await User.findById(req.user.id);
+        } catch (e) {
+            // Handle invalid ObjectId if switching from file to DB
+            user = null;
+        }
+    }
+
+    if (!user) {
+        const users = await readUsers();
+        user = users.find(u => u.id === req.user.id);
+    }
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
