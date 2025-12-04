@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import NodeCache from 'node-cache';
-import YahooFinance from 'yahoo-finance2';
 import puppeteer from 'puppeteer';
 import axios from 'axios';
 import bcrypt from 'bcrypt';
@@ -38,7 +37,6 @@ const CASHFREE_BASE_URL = 'https://api.cashfree.com/pg/orders';
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
 const holdingsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for holdings (faster refresh)
 const fundDetailsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for fund details
-const yahooFinance = new YahooFinance();
 
 // MongoDB Connection (optional - falls back to file-based if not configured)
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -369,9 +367,21 @@ const fetchPageWithPuppeteer = async (url) => {
     }
 };
 
-const BATCH_SIZE = 5; // Reduced batch size for TradingView to avoid rate limits/overload
-const DELAY_MS = 1000; // Increased delay
+const BATCH_SIZE = 20; // Increased batch size for faster loading
+const DELAY_MS = 200; // Reduced delay
 const GROWW_SEARCH_URL = "https://groww.in/v1/api/search/v1/entity?app=false&page=0&q=";
+
+const cleanCompanyName = (name) => {
+    if (!name) return "";
+    // Remove common noise and fix concatenation issues if any
+    let cleaned = name.trim();
+    // If name is very long and has multiple "Ltd", it might be concatenated. 
+    // Heuristic: Split by 'Ltd.' and take the first part + 'Ltd.'
+    if (cleaned.match(/Ltd\./g)?.length > 1) {
+        cleaned = cleaned.split('Ltd.')[0] + 'Ltd.';
+    }
+    return cleaned;
+};
 
 const processBatch = async (batch) => {
     return Promise.all(batch.map(async (item) => {
@@ -383,8 +393,11 @@ const processBatch = async (batch) => {
                 throw new Error("Missing company_name");
             }
 
+            const cleanedName = cleanCompanyName(item.company_name);
+            console.log(`Processing item: ${cleanedName} (Raw: ${item.company_name})`);
+
             // Use TradingView instead of Yahoo
-            realReturns = await fetchReturnsFromTV(item.company_name);
+            realReturns = await fetchReturnsFromTV(cleanedName);
 
         } catch (e) {
             console.error(`Error processing ${item.company_name}:`, e.message);
@@ -392,7 +405,7 @@ const processBatch = async (batch) => {
 
         console.log(`Finished item: ${item.company_name}`);
         return {
-            name: item.company_name || "Unknown",
+            name: cleanCompanyName(item.company_name) || "Unknown",
             sector: item.sector_name || "Equity",
             allocation: item.corpus_per ? item.corpus_per.toFixed(2) : "0.00",
             return1y: realReturns?.return1y || null,
