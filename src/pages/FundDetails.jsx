@@ -12,13 +12,41 @@ const FundDetails = () => {
     const [aiAnalysis, setAiAnalysis] = useState('');
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefreshData = async () => {
+        try {
+            setRefreshing(true);
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            await fetch(`${API_URL}/api/cache/clear`, { method: 'POST' });
+
+            const data = await getFundDetails(id);
+            setFund(data);
+            setRefreshing(false);
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         const loadFund = async () => {
-            const data = await getFundDetails(id);
-            setFund(data);
+            try {
+                console.log('Loading fund with id:', id);
+                const data = await getFundDetails(id);
+                console.log('Fund data received:', data ? 'success' : 'null/undefined');
+                if (!data) {
+                    console.error('getFundDetails returned null for id:', id);
+                }
+                setFund(data);
+            } catch (error) {
+                console.error('Error loading fund:', error);
+                setFund(null);
+            }
         };
-        loadFund();
+        if (id) {
+            loadFund();
+        }
     }, [id]);
 
     const handleAIAnalysis = async () => {

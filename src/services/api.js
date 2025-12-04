@@ -184,6 +184,11 @@ export const getFundDetails = async (schemeCode) => {
         };
     } catch (error) {
         console.error("Error fetching fund details:", error);
+        console.error("Error details:", {
+            message: error.message,
+            schemeCode: schemeCode,
+            stack: error.stack
+        });
         return null;
     }
 };

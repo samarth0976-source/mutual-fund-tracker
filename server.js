@@ -47,6 +47,10 @@ const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
 const CASHFREE_SECRET = process.env.CASHFREE_SECRET;
 const CASHFREE_BASE_URL = 'https://api.cashfree.com/pg/orders';
 
+// Groww API URLs
+const GROWW_SEARCH_URL = 'https://groww.in/v1/api/search/v3/query/global/st_query?page=0&query=';
+const GROWW_HOLDINGS_URL = 'https://groww.in/v1/api/data/mf/web/v1/scheme/search_id/';
+
 // Caches with different TTLs for different data types
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
 const holdingsCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for holdings
