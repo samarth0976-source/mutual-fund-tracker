@@ -83,9 +83,9 @@ const StockDetails = () => {
 
     if (error) return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
-            <div className="text-danger text-xl font-bold mb-2">Error Loading Stock Data</div>
+            <div className="text-red-500 text-xl font-bold mb-2">Error Loading Stock Data</div>
             <p className="text-muted mb-4">{error}</p>
-            <Link to="/" className="text-primary hover:underline">Return to Dashboard</Link>
+            <button onClick={() => navigate(-1)} className="text-primary hover:underline">Go Back</button>
         </div>
     );
 

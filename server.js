@@ -35,8 +35,9 @@ const CASHFREE_BASE_URL = 'https://api.cashfree.com/pg/orders';
 
 // Caches with different TTLs for different data types
 const searchCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for search results
-const holdingsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for holdings (faster refresh)
+const holdingsCache = new NodeCache({ stdTTL: 86400 }); // 24 hours for holdings
 const fundDetailsCache = new NodeCache({ stdTTL: 3600 }); // 1 hour for fund details
+const stockDetailsCache = new NodeCache({ stdTTL: 28800 }); // 8 hours for stock details
 
 // MongoDB Connection (optional - falls back to file-based if not configured)
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -527,12 +528,21 @@ app.get('/api/stock/details', async (req, res) => {
     }
 
     try {
+        const cacheKey = `stock_details_${name}`;
+        const cachedDetails = stockDetailsCache.get(cacheKey);
+
+        if (cachedDetails) {
+            console.log(`Returning cached stock details for: ${name}`);
+            return res.json(cachedDetails);
+        }
+
         const details = await fetchStockDetailsFromTV(name);
 
         if (!details) {
             return res.status(404).json({ error: "Stock details not found" });
         }
 
+        stockDetailsCache.set(cacheKey, details);
         res.json(details);
     } catch (error) {
         console.error('Error fetching stock details:', error);
