@@ -546,25 +546,24 @@ const processBatch = async (batch) => {
 };
 
 app.get('/api/holdings', async (req, res) => {
-    const { name, schemeCode } = req.query;  // Accept scheme code from frontend
+    const { name, schemeCode } = req.query;
     if (!name) {
         return res.status(400).json({ error: "Fund name is required" });
     }
 
     try {
-        const holdingsCacheKey = `holdings_${name}`;
+        const holdingsCacheKey = `holdings_${schemeCode || name}`;
 
         // Check Redis first (persistent cache)
         const redisData = await redisGet(holdingsCacheKey);
         if (redisData) {
-            console.log(`Returning Redis cached holdings for: ${name}`);
+            console.log(`📦 Redis HIT: ${name}`);
             return res.json({
                 ...redisData,
                 meta: {
                     ...redisData.meta,
                     cached: true,
-                    cacheSource: 'redis',
-                    cachedAt: redisData.meta.timestamp
+                    cacheSource: 'redis'
                 }
             });
         }
@@ -572,123 +571,109 @@ app.get('/api/holdings', async (req, res) => {
         // Check NodeCache as fallback
         const cachedHoldings = holdingsCache.get(holdingsCacheKey);
         if (cachedHoldings) {
-            console.log(`Returning NodeCache holdings for: ${name}`);
-            // Also store in Redis for persistence
+            console.log(`📦 Memory HIT: ${name}`);
             await redisSet(holdingsCacheKey, cachedHoldings);
             return res.json({
                 ...cachedHoldings,
                 meta: {
                     ...cachedHoldings.meta,
                     cached: true,
-                    cacheSource: 'memory',
-                    cachedAt: cachedHoldings.meta.timestamp
+                    cacheSource: 'memory'
                 }
             });
         }
 
-        console.log(`⚡ Fetching fresh data for: ${name}`);
+        console.log(`⚡ Fetching from RapidAPI: ${name} (Code: ${schemeCode})`);
 
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        };
+        // RapidAPI Configuration
+        const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 
-        // Clean fund name for better Groww search results
-        const cleanFundName = (name) => {
-            return name
-                .replace(/\bDirect\s+Plan\b/gi, '')
-                .replace(/\bRegular\s+Plan\b/gi, '')
-                .replace(/\bGrowth\b/gi, '')
-                .replace(/\bDividend\b/gi, '')
-                .replace(/\bIDCW\b/gi, '')
-                .replace(/\bOption\b/gi, '')
-                .replace(/\bFund\b/gi, '')
-                .replace(/\bScheme\b/gi, '')
-                .replace(/\bRetail\b/gi, '')
-                .replace(/\bInstitutional\b/gi, '')
-                .replace(/\s+-\s+/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-        };
+        if (!RAPIDAPI_KEY) {
+            console.warn('⚠️ RapidAPI key not configured, falling back to Groww scraping');
+            // Fallback to Groww scraping if no API key
+            return await fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey);
+        }
 
-        let slug;
-        let fundTitle = name;
-        const cleanedName = cleanFundName(name);
-
-        // Try multiple search strategies
-        const searchStrategies = [
-            cleanedName,
-            cleanedName.split(' ').slice(0, 4).join(' '),  // First 4 words
-            cleanedName.split(' ').slice(0, 3).join(' '),  // First 3 words
-            cleanedName.split(' ').slice(0, 2).join(' ')   // First 2 words
-        ].filter(s => s.length > 3); // Only try searches with reasonable length
-        const cacheKey = `search_${name}`;
-        const cachedSlug = searchCache.get(cacheKey);
-
-        if (cachedSlug) {
-            console.log(`Using cached slug for: ${name}`);
-            slug = cachedSlug;
-            fundTitle = cachedSlug.title || name;
-        } else {
-            // Try each search strategy until we find a result
-            for (const searchQuery of searchStrategies) {
-                try {
-                    console.log(`Trying search: ${searchQuery}`);
-                    const searchResponse = await axios.get(`${GROWW_SEARCH_URL}${encodeURIComponent(searchQuery)}`, { headers });
-
-                    if (searchResponse.data && searchResponse.data.content) {
-                        console.log(`Groww returned ${searchResponse.data.content.length} results for "${searchQuery}"`);
-                    }
-
-                    if (searchResponse.data && searchResponse.data.content && searchResponse.data.content.length > 0) {
-                        const fund = searchResponse.data.content[0];
-                        slug = fund.search_id;
-                        fundTitle = fund.title || name;
-                        searchCache.set(cacheKey, { slug, title: fundTitle });
-                        console.log(`✅ Found fund: ${fundTitle} (Slug: ${slug})`);
-                        break; // Success! Exit loop
-                    }
-                } catch (err) {
-                    console.warn(`Search failed for "${searchQuery}":`, err.message);
-                    continue; // Try next strategy
+        // Use RapidAPI for holdings data
+        try {
+            const rapidApiOptions = {
+                method: 'GET',
+                url: `https://india-mutual-funds-portfolio-holding.p.rapidapi.com/v1/mutualfunds/${schemeCode}/portfolio`,
+                headers: {
+                    'X-RapidAPI-Key': RAPIDAPI_KEY,
+                    'X-RapidAPI-Host': 'india-mutual-funds-portfolio-holding.p.rapidapi.com'
                 }
-            }
-        }
+            };
 
-        // If no slug found after all strategies, construct slug manually
-        if (!slug) {
-            // Try fetching directly using MFAPI scheme code as Groww slug
-            const baseSlug = name
-                .toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^a-z0-9-]/g, '')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '');
+            const apiResponse = await axios.request(rapidApiOptions);
 
-            // Check if the name already includes plan/option info
-            const hasPlanInfo = name.toLowerCase().includes('direct') || name.toLowerCase().includes('regular');
-            const hasOptionInfo = name.toLowerCase().includes('growth') || name.toLowerCase().includes('dividend') || name.toLowerCase().includes('idcw');
+            if (apiResponse.data && apiResponse.data.data) {
+                const holdingsRaw = apiResponse.data.data.holdings || apiResponse.data.data;
 
-            // Construct slug based on available info
-            if (!hasPlanInfo && !hasOptionInfo) {
-                // Default to direct-growth which is the correct Groww format
-                slug = `${baseSlug}-direct-growth`;
-            } else if (!hasOptionInfo) {
-                // Has plan but no option, add growth
-                slug = `${baseSlug}-growth`;
+                let holdings = [];
+                if (Array.isArray(holdingsRaw)) {
+                    holdings = holdingsRaw.map(item => ({
+                        name: item.company_name || item.name || item.stock_name || "Unknown",
+                        sector: item.sector || item.sector_name || "Equity",
+                        allocation: parseFloat(item.percentage || item.corpus_per || item.weight || 0).toFixed(2),
+                        return1y: null,
+                        return3y: null,
+                        return1m: null,
+                        isReal: true
+                    }));
+                }
+
+                const response = {
+                    holdings,
+                    meta: {
+                        fund: name,
+                        totalHoldings: holdings.length,
+                        dataSource: 'RapidAPI',
+                        timestamp: new Date().toISOString()
+                    }
+                };
+
+                // Cache in Redis and Memory
+                await redisSet(holdingsCacheKey, response);
+                holdingsCache.set(holdingsCacheKey, response);
+                console.log(`✅ Cached: ${name} (${holdings.length} holdings)`);
+
+                return res.json(response);
             } else {
-                slug = baseSlug;
+                throw new Error('Invalid API response structure');
             }
-
-            fundTitle = name;
-            console.log(`Using fallback slug: ${slug}`);
+        } catch (apiError) {
+            console.warn(`RapidAPI failed: ${apiError.message}, falling back to Groww`);
+            return await fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey);
         }
 
+    } catch (error) {
+        console.error('Error fetching holdings:', error.message);
+        res.status(500).json({
+            error: 'Failed to fetch data',
+            details: error.message
+        });
+    }
+});
+
+// Fallback function to fetch from Groww using Puppeteer
+async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
+    try {
+        const baseSlug = name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+
+        const slug = `${baseSlug}-direct-growth`;
         const pageUrl = `https://groww.in/mutual-funds/${slug}`;
+
+        console.log(`🔄 Fallback to Groww: ${pageUrl}`);
         const nextData = await fetchPageWithPuppeteer(pageUrl);
 
         if (!nextData) {
-            console.log("Failed to fetch data with Puppeteer");
-            return res.status(500).json({ error: "Failed to fetch page data" });
+            return res.status(500).json({ error: "Failed to fetch from Groww" });
         }
 
         const findKey = (obj, key) => {
@@ -705,49 +690,39 @@ app.get('/api/holdings', async (req, res) => {
         const holdingsRaw = findKey(nextData, "holdings");
 
         if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
-            console.log("Holdings data not found in JSON");
             return res.status(404).json({ error: "Holdings data not found" });
         }
 
-        console.log(`Found ${holdingsRaw.length} holdings`);
-
-        const processedHoldings = [];
-        for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
-            const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
-            console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(holdingsRaw.length / BATCH_SIZE)}`);
-            const batchResults = await processBatch(batch);
-            processedHoldings.push(...batchResults);
-
-            if (i + BATCH_SIZE < holdingsRaw.length) {
-                await new Promise(resolve => setTimeout(resolve, DELAY_MS));
-            }
-        }
+        const holdings = holdingsRaw.map(item => ({
+            name: item.company_name || "Unknown",
+            sector: item.sector_name || "Equity",
+            allocation: item.corpus_per ? item.corpus_per.toFixed(2) : "0.00",
+            return1y: null,
+            return3y: null,
+            return1m: null,
+            isReal: true
+        }));
 
         const response = {
-            holdings: processedHoldings,
+            holdings,
             meta: {
-                fund: fundTitle,
-                totalHoldings: processedHoldings.length,
-                dataSource: 'Groww (via Puppeteer)',
+                fund: name,
+                totalHoldings: holdings.length,
+                dataSource: 'Groww (Fallback)',
                 timestamp: new Date().toISOString()
             }
         };
 
-        // Store in both Redis (persistent) and NodeCache (fast fallback)
         await redisSet(holdingsCacheKey, response);
         holdingsCache.set(holdingsCacheKey, response);
-        console.log(`✅ Cached holdings for: ${name} (Redis + Memory)`);
+        console.log(`✅ Cached from Groww: ${name}`);
 
-        res.json(response);
-
+        return res.json(response);
     } catch (error) {
-        console.error('Error fetching holdings:', error.message);
-        res.status(500).json({
-            error: 'Failed to fetch data',
-            details: error.message
-        });
+        console.error('Groww fallback error:', error.message);
+        return res.status(500).json({ error: 'Failed to fetch holdings' });
     }
-});
+}
 
 app.get('/api/stock/details', async (req, res) => {
     const { name } = req.query;
