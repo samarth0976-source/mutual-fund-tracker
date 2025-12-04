@@ -15,6 +15,9 @@ import mongoose from 'mongoose';
 import cron from 'node-cron';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as cheerio from 'cheerio';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const TradingView = require('@mathieuc/tradingview');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,62 +150,107 @@ app.use(express.json());
 // In the AI endpoint (around line 840):
 // const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
 
-// Helper to fetch real returns using Yahoo Data
-const fetchRealReturns = async (symbol) => {
-    try {
-        const queryOptions = { period1: '2020-01-01', interval: '1mo' };
+// Helper to fetch returns using TradingView API
+const fetchReturnsFromTV = async (stockName) => {
+    return new Promise(async (resolve) => {
+        console.log(`[TV] Searching for: ${stockName}`);
 
         try {
-            const chart = await yahooFinance.chart(symbol, queryOptions);
-            if (!chart || !chart.quotes || chart.quotes.length === 0) return null;
+            // Search for the symbol
+            const searchResults = await TradingView.searchMarketV3(stockName);
 
-            const quotes = chart.quotes;
-            const currentPrice = quotes[quotes.length - 1].close;
-            const currentDate = new Date(quotes[quotes.length - 1].date);
+            if (!searchResults || searchResults.length === 0) {
+                console.log(`[TV] No symbol found for: ${stockName}`);
+                return resolve(null);
+            }
 
-            const findPriceAtDate = (targetDate) => {
-                let closest = null;
-                let minDiff = Infinity;
-                for (const q of quotes) {
-                    const qDate = new Date(q.date);
-                    const diff = Math.abs(qDate - targetDate);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = q;
+            // Prioritize NSE/BSE symbols
+            const match = searchResults.find(s => s.exchange === 'NSE') ||
+                searchResults.find(s => s.exchange === 'BSE') ||
+                searchResults[0];
+
+            const symbol = `${match.exchange}:${match.symbol}`;
+            console.log(`[TV] Found symbol: ${symbol}`);
+
+            const client = new TradingView.Client();
+            const chart = new client.Session.Chart();
+
+            chart.setMarket(symbol, {
+                timeframe: 'D',
+                range: 1200, // Request enough bars for 3 years
+            });
+
+            // Set a timeout to avoid hanging
+            const timeout = setTimeout(() => {
+                console.log(`[TV] Timeout for ${symbol}`);
+                client.end();
+                resolve(null);
+            }, 10000);
+
+            chart.onUpdate(() => {
+                if (!chart.periods || chart.periods.length === 0) return;
+
+                const periods = chart.periods;
+                const currentPrice = periods[0].close;
+
+                // Helper to find price at a specific date
+                const findPriceAtDate = (targetDate) => {
+                    const targetTime = targetDate.getTime() / 1000;
+                    let closest = null;
+                    let minDiff = Infinity;
+
+                    for (const p of periods) {
+                        const diff = Math.abs(p.time - targetTime);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closest = p;
+                        }
                     }
-                }
-                if (minDiff > 30 * 24 * 3600 * 1000) return null;
-                return closest ? closest.close : null;
-            };
 
-            const d1m = new Date(currentDate); d1m.setMonth(d1m.getMonth() - 1);
-            const d1y = new Date(currentDate); d1y.setFullYear(d1y.getFullYear() - 1);
-            const d3y = new Date(currentDate); d3y.setFullYear(d3y.getFullYear() - 3);
+                    // If closest is too far (e.g. > 10 days), return null
+                    if (minDiff > 10 * 24 * 3600) return null;
+                    return closest ? closest.close : null;
+                };
 
-            const p1m = findPriceAtDate(d1m);
-            const p1y = findPriceAtDate(d1y);
-            const p3y = findPriceAtDate(d3y);
+                const now = new Date();
+                const d1m = new Date(now); d1m.setMonth(d1m.getMonth() - 1);
+                const d1y = new Date(now); d1y.setFullYear(d1y.getFullYear() - 1);
+                const d3y = new Date(now); d3y.setFullYear(d3y.getFullYear() - 3);
 
-            const calculateReturn = (current, old) => {
-                if (!old) return null;
-                return ((current - old) / old) * 100;
-            };
+                const p1m = findPriceAtDate(d1m);
+                const p1y = findPriceAtDate(d1y);
+                const p3y = findPriceAtDate(d3y);
 
-            return {
-                return1m: calculateReturn(currentPrice, p1m)?.toFixed(2) || null,
-                return1y: calculateReturn(currentPrice, p1y)?.toFixed(2) || null,
-                return3y: calculateReturn(currentPrice, p3y)?.toFixed(2) || null
-            };
+                const calculateReturn = (current, old) => {
+                    if (!old) return null;
+                    return ((current - old) / old) * 100;
+                };
 
-        } catch (yError) {
-            console.error(`Yahoo Error for ${symbol}:`, yError.message);
-            return null;
+                const returns = {
+                    return1m: calculateReturn(currentPrice, p1m)?.toFixed(2) || null,
+                    return1y: calculateReturn(currentPrice, p1y)?.toFixed(2) || null,
+                    return3y: calculateReturn(currentPrice, p3y)?.toFixed(2) || null
+                };
+
+                console.log(`[TV] Returns for ${symbol}:`, returns);
+
+                clearTimeout(timeout);
+                client.end();
+                resolve(returns);
+            });
+
+            chart.onError((...err) => {
+                console.error(`[TV] Chart error for ${symbol}:`, ...err);
+                clearTimeout(timeout);
+                client.end();
+                resolve(null);
+            });
+
+        } catch (error) {
+            console.error(`[TV] Error processing ${stockName}:`, error.message);
+            resolve(null);
         }
-
-    } catch (e) {
-        console.error(`Error fetching for ${symbol}:`, e.message);
-        return null;
-    }
+    });
 };
 
 // Helper to fetch page with Puppeteer
@@ -230,8 +278,8 @@ const fetchPageWithPuppeteer = async (url) => {
     }
 };
 
-const BATCH_SIZE = 10;
-const DELAY_MS = 50;
+const BATCH_SIZE = 5; // Reduced batch size for TradingView to avoid rate limits/overload
+const DELAY_MS = 1000; // Increased delay
 const GROWW_SEARCH_URL = "https://groww.in/v1/api/search/v1/entity?app=false&page=0&q=";
 
 const processBatch = async (batch) => {
@@ -244,14 +292,9 @@ const processBatch = async (batch) => {
                 throw new Error("Missing company_name");
             }
 
-            const yahooSearch = await yahooFinance.search(item.company_name);
-            if (yahooSearch.quotes && yahooSearch.quotes.length > 0) {
-                const symbol = yahooSearch.quotes[0].symbol;
-                console.log(`Found symbol for ${item.company_name}: ${symbol}`);
-                realReturns = await fetchRealReturns(symbol);
-            } else {
-                console.log(`No Yahoo symbol found for: ${item.company_name}`);
-            }
+            // Use TradingView instead of Yahoo
+            realReturns = await fetchReturnsFromTV(item.company_name);
+
         } catch (e) {
             console.error(`Error processing ${item.company_name}:`, e.message);
         }
