@@ -550,118 +550,79 @@ app.get('/api/holdings', async (req, res) => {
             slug = cachedSlug;
             fundTitle = cachedSlug.title || name;
         } else {
-            // Try each search strategy until we find a result
-            for (const searchQuery of searchStrategies) {
-                try {
-                    console.log(`Trying search: ${searchQuery}`);
-                    const searchResponse = await axios.get(`${GROWW_SEARCH_URL}${encodeURIComponent(searchQuery)}`, { headers });
-
-                    if (searchResponse.data && searchResponse.data.content && searchResponse.data.content.length > 0) {
-                        const fund = searchResponse.data.content[0];
-                        slug = fund.search_id;
-                        fundTitle = fund.title || name;
-                        searchCache.set(cacheKey, { slug, title: fundTitle });
-                        console.log(`✅ Found fund: ${fundTitle} (Slug: ${slug})`);
-                        break; // Success! Exit loop
-                    }
-                } catch (err) {
-                    console.warn(`Search failed for "${searchQuery}":`, err.message);
-                    continue; // Try next strategy
-                }
-            }
-        }
-
-        // If no slug found after all strategies, try using scheme code or construct slug manually
-        if (!slug && schemeCode) {
-            // Try fetching directly using MFAPI scheme code as Groww slug
-            const possibleSlug = name
-                .toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^a-z0-9-]/g, '')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '');
-
-            console.log(`Attempting direct URL with constructed slug: ${possibleSlug}`);
-            slug = possibleSlug;
-            fundTitle = name;
-        }
-
-        if (!slug) {
-            console.log(`❌ Fund not found in Groww after trying all strategies: ${name}`);
-            return res.json({
-                holdings: [],
+            holdings: [],
                 meta: {
-                    fund: name,
+                fund: name,
                     totalHoldings: 0,
-                    dataSource: 'Not Available',
-                    timestamp: new Date().toISOString(),
-                    message: 'Holdings data not available for this fund on Groww'
-                }
-            });
-        }
-
-        const pageUrl = `https://groww.in/mutual-funds/${slug}`;
-        const nextData = await fetchPageWithPuppeteer(pageUrl);
-
-        if (!nextData) {
-            console.log("Failed to fetch data with Puppeteer");
-            return res.status(500).json({ error: "Failed to fetch page data" });
-        }
-
-        const findKey = (obj, key) => {
-            if (obj && typeof obj === 'object') {
-                if (obj[key]) return obj[key];
-                for (const k in obj) {
-                    const result = findKey(obj[k], key);
-                    if (result) return result;
-                }
+                        dataSource: 'Not Available',
+                            timestamp: new Date().toISOString(),
+                                message: 'Holdings data not available for this fund on Groww'
             }
-            return null;
-        };
-
-        const holdingsRaw = findKey(nextData, "holdings");
-
-        if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
-            console.log("Holdings data not found in JSON");
-            return res.status(404).json({ error: "Holdings data not found" });
+        });
         }
 
-        console.log(`Found ${holdingsRaw.length} holdings`);
+const pageUrl = `https://groww.in/mutual-funds/${slug}`;
+const nextData = await fetchPageWithPuppeteer(pageUrl);
 
-        const processedHoldings = [];
-        for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
-            const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
-            console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(holdingsRaw.length / BATCH_SIZE)}`);
-            const batchResults = await processBatch(batch);
-            processedHoldings.push(...batchResults);
+if (!nextData) {
+    console.log("Failed to fetch data with Puppeteer");
+    return res.status(500).json({ error: "Failed to fetch page data" });
+}
 
-            if (i + BATCH_SIZE < holdingsRaw.length) {
-                await new Promise(resolve => setTimeout(resolve, DELAY_MS));
-            }
+const findKey = (obj, key) => {
+    if (obj && typeof obj === 'object') {
+        if (obj[key]) return obj[key];
+        for (const k in obj) {
+            const result = findKey(obj[k], key);
+            if (result) return result;
         }
+    }
+    return null;
+};
 
-        const response = {
-            holdings: processedHoldings,
-            meta: {
-                fund: fundTitle,
-                totalHoldings: processedHoldings.length,
-                dataSource: 'Groww (via Puppeteer)',
-                timestamp: new Date().toISOString()
-            }
-        };
+const holdingsRaw = findKey(nextData, "holdings");
 
-        holdingsCache.set(holdingsCacheKey, response);
-        console.log(`Cached holdings for: ${name}`);
+if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
+    console.log("Holdings data not found in JSON");
+    return res.status(404).json({ error: "Holdings data not found" });
+}
 
-        res.json(response);
+console.log(`Found ${holdingsRaw.length} holdings`);
+
+const processedHoldings = [];
+for (let i = 0; i < holdingsRaw.length; i += BATCH_SIZE) {
+    const batch = holdingsRaw.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(holdingsRaw.length / BATCH_SIZE)}`);
+    const batchResults = await processBatch(batch);
+    processedHoldings.push(...batchResults);
+
+    if (i + BATCH_SIZE < holdingsRaw.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+    }
+}
+
+const response = {
+    holdings: processedHoldings,
+    meta: {
+        fund: fundTitle,
+        totalHoldings: processedHoldings.length,
+        dataSource: 'Groww (via Puppeteer)',
+        timestamp: new Date().toISOString()
+    }
+};
+
+holdingsCache.set(holdingsCacheKey, response);
+console.log(`Cached holdings for: ${name}`);
+
+res.json(response);
 
     } catch (error) {
-        console.error('Error fetching holdings:', error.message);
-        res.status(500).json({
-            error: 'Failed to fetch data',
-            details: error.message
-        });
-    }
+    console.error('Error fetching holdings:', error.message);
+    res.status(500).json({
+        error: 'Failed to fetch data',
+        details: error.message
+    });
+}
 });
 
 app.get('/api/stock/details', async (req, res) => {
