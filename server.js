@@ -282,7 +282,7 @@ const fetchStockDetailsFromTV = async (stockName) => {
                 console.log(`[TV] Timeout for ${symbol}`);
                 client.end();
                 resolve(null);
-            }, 10000);
+            }, 5000);
 
             chart.onUpdate(() => {
                 if (!chart.periods || chart.periods.length === 0) return;
