@@ -25,10 +25,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3001;
 
+// IMPORTANT: Middleware must come BEFORE routes
+app.use(cors());
+app.use(express.json());
+
 // Health check for Render
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// Serve static files
+// Serve static files (after middleware)
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Cache clear endpoint for debugging
@@ -254,10 +258,7 @@ if (GEMINI_API_KEY) {
     console.log('ℹ️  No GEMINI_API_KEY found, AI features disabled');
 }
 
-app.use(cors());
-app.use(express.json());
-
-// ... (rest of the file)
+// Middleware already set up at the top of the file
 
 // In the AI endpoint (around line 840):
 // const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-001' });
@@ -1622,6 +1623,15 @@ const warmCache = async () => {
 //     console.log('🔄 Running daily cache refresh...');
 //     warmCache().catch(err => console.error('Daily cache refresh error:', err));
 // });
+
+// SPA Fallback - serve index.html for all non-API routes (React Router support)
+app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
