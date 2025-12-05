@@ -813,22 +813,22 @@ const calculateTopFunds = async () => {
             return null;
         }
 
-        console.log(`📊 Processing ${Math.min(500, allFunds.length)} funds...`);
-
-        // Sample 500 funds (to avoid rate limits)
+        // Sample 100 funds (reduced from 500 for faster response)
         // Prioritize Direct Growth plans
         const directGrowthFunds = allFunds.filter(f =>
             f.schemeName.toLowerCase().includes('direct') &&
             f.schemeName.toLowerCase().includes('growth')
-        ).slice(0, 500);
+        ).slice(0, 100);
 
-        const fundsToProcess = directGrowthFunds.length >= 100
+        const fundsToProcess = directGrowthFunds.length >= 50
             ? directGrowthFunds
-            : allFunds.slice(0, 500);
+            : allFunds.slice(0, 100);
 
-        // Process in batches to avoid rate limits
-        const BATCH_SIZE = 10;
-        const DELAY_BETWEEN_BATCHES = 1000; // 1 second
+        console.log(`📊 Processing ${fundsToProcess.length} funds...`);
+
+        // Process in batches - faster now (20 batch, 200ms delay)
+        const BATCH_SIZE = 20;
+        const DELAY_BETWEEN_BATCHES = 200; // 200ms (reduced from 1 second)
         const processedFunds = [];
 
         for (let i = 0; i < fundsToProcess.length; i += BATCH_SIZE) {
@@ -838,10 +838,8 @@ const calculateTopFunds = async () => {
 
             processedFunds.push(...batchResults.filter(f => f !== null));
 
-            // Progress log every 100 funds
-            if ((i + BATCH_SIZE) % 100 === 0) {
-                console.log(`📈 Processed ${i + BATCH_SIZE}/${fundsToProcess.length} funds`);
-            }
+            // Progress log
+            console.log(`📈 Processed ${Math.min(i + BATCH_SIZE, fundsToProcess.length)}/${fundsToProcess.length} funds`);
 
             // Delay between batches
             if (i + BATCH_SIZE < fundsToProcess.length) {
