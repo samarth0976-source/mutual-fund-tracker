@@ -6,7 +6,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_URL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
         // Check if user is logged in on mount
