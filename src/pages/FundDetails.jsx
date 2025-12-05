@@ -13,6 +13,7 @@ const FundDetails = () => {
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [holdingsKey, setHoldingsKey] = useState(0); // Track to re-trigger stock returns fetch
 
     const handleRefreshData = async () => {
         try {
@@ -22,6 +23,7 @@ const FundDetails = () => {
 
             const data = await getFundDetails(id);
             setFund(data);
+            setHoldingsKey(prev => prev + 1); // Trigger stock returns re-fetch
             setRefreshing(false);
         } catch (error) {
             console.error('Error refreshing data:', error);
@@ -78,15 +80,14 @@ const FundDetails = () => {
             }
         };
 
-        // Fetch returns for first 10 holdings (to avoid too many requests)
-        const holdingsToEnrich = fund.holdings.slice(0, 10);
-        holdingsToEnrich.forEach((holding, index) => {
+        // Fetch returns for ALL holdings with 300ms stagger
+        fund.holdings.forEach((holding, index) => {
             // Stagger requests to avoid overwhelming the server
             setTimeout(() => {
                 fetchStockReturns(holding.name, index);
-            }, index * 500); // 500ms delay between each request
+            }, index * 300); // 300ms delay between each request
         });
-    }, [fund?.holdings?.length]);
+    }, [fund?.holdings?.length, holdingsKey]);
 
     const handleAIAnalysis = async () => {
         setShowAI(true);
