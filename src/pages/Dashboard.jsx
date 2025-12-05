@@ -14,9 +14,22 @@ const Dashboard = () => {
         const loadFunds = async () => {
             setLoading(true);
             const initialList = await getTopMutualFunds(20);
-            const enrichedList = await enrichDashboardFunds(initialList);
 
-            const sortedList = enrichedList.sort((a, b) => {
+            // Check if data is pre-calculated (from /api/top-funds)
+            const isPreCalculated = initialList.length > 0 && initialList[0].isPreCalculated;
+
+            let finalList;
+            if (isPreCalculated) {
+                // Data already has returns, just use it directly
+                console.log('Using pre-calculated top funds data');
+                finalList = initialList;
+            } else {
+                // Fallback: enrich with individual API calls (slower)
+                console.log('Enriching funds with individual API calls');
+                finalList = await enrichDashboardFunds(initialList);
+            }
+
+            const sortedList = finalList.sort((a, b) => {
                 const retA = parseFloat(a.return6m) || 0;
                 const retB = parseFloat(b.return6m) || 0;
                 return retB - retA;

@@ -11,14 +11,22 @@ export const getTopMutualFunds = async (limit = 20, sortBy = '6M') => {
         if (response.ok) {
             const data = await response.json();
             if (data.funds && Array.isArray(data.funds)) {
+                // Return data in the format Dashboard expects (already enriched!)
                 return data.funds.map(fund => ({
                     id: fund.id,
                     name: fund.name,
                     category: fund.category,
-                    nav: fund.nav,
+                    nav: fund.nav?.toFixed(2) || '0.00',
                     rating: Math.floor(Math.random() * 2) + 4,
+                    rank: fund.rank,
+                    // Map returns to Dashboard expected format
+                    return1d: fund.returns?.['1M'] ? (parseFloat(fund.returns['1M']) / 22).toFixed(2) : '0.00', // Approximate 1D
+                    return6m: fund.returns?.['6M'] || '0.00',
+                    return1y: fund.returns?.['1Y'] || '0.00',
+                    return3m: fund.returns?.['3M'] || '0.00',
+                    // Keep original returns too
                     returns: fund.returns,
-                    rank: fund.rank
+                    isPreCalculated: true
                 }));
             }
         }
@@ -33,7 +41,8 @@ export const getTopMutualFunds = async (limit = 20, sortBy = '6M') => {
         return fundsCache.slice(0, limit).map(fund => ({
             id: fund.schemeCode,
             name: fund.schemeName,
-            rating: Math.floor(Math.random() * 2) + 4
+            rating: Math.floor(Math.random() * 2) + 4,
+            isPreCalculated: false
         }));
     } catch (error) {
         console.error("Error fetching top mutual funds:", error);
