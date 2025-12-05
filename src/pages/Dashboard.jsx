@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getTopMutualFunds } from '../services/api';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Star, Building2, Gem, BarChart3, PiggyBank, Calculator, Download, GitCompare, Filter, ChevronRight } from 'lucide-react';
+import { TrendingUp, Star, Building2, Gem, BarChart3, PiggyBank, ChevronRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -66,17 +66,6 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    // Simulated investment data
-    const investmentData = {
-        currentValue: 4321,
-        invested: 4000,
-        todayReturns: 2.03,
-        todayPercent: 0.05,
-        totalReturns: 320,
-        totalPercent: 8.01,
-        xirr: 7.96
-    };
-
     const collections = [
         { type: 'high-return', label: 'High Return', filter: 'high-return' },
         { type: 'gold-silver', label: 'Gold & Silver', filter: 'gold' },
@@ -84,14 +73,6 @@ const Dashboard = () => {
         { type: 'large-cap', label: 'Large Cap', filter: 'large-cap' },
         { type: 'mid-cap', label: 'Mid Cap', filter: 'mid-cap' },
         { type: 'small-cap', label: 'Small Cap', filter: 'small-cap' },
-    ];
-
-    const tools = [
-        { icon: <TrendingUp className="w-5 h-5" />, label: 'NFO Live', badge: '7 open' },
-        { icon: <Download className="w-5 h-5" />, label: 'Import funds' },
-        { icon: <GitCompare className="w-5 h-5" />, label: 'Compare funds' },
-        { icon: <Calculator className="w-5 h-5" />, label: 'SIP Calculator' },
-        { icon: <Filter className="w-5 h-5" />, label: 'Funds screener' },
     ];
 
     useEffect(() => {
@@ -106,163 +87,100 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Mutual Funds</h1>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column - 2/3 width */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Popular Funds Section */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-white">Popular Funds</h2>
-                        </div>
-
-                        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                            {loading ? (
-                                [...Array(4)].map((_, i) => (
-                                    <div key={i} className="min-w-[200px] h-[120px] bg-surface border border-border rounded-xl animate-pulse" />
-                                ))
-                            ) : (
-                                funds.slice(0, 4).map((fund) => (
-                                    <FundCard
-                                        key={fund.id}
-                                        fund={fund}
-                                        onClick={() => navigate(`/fund/${fund.id}`)}
-                                    />
-                                ))
-                            )}
-                        </div>
-
-                        <Link to="/market" className="inline-flex items-center gap-1 text-primary text-sm font-medium mt-4 hover:underline">
-                            All Mutual Funds <ChevronRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-
-                    {/* Collections Section */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-white mb-4">Collections</h2>
-                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-                            {collections.map((collection) => (
-                                <CollectionCard
-                                    key={collection.type}
-                                    icon={<CollectionIcon type={collection.type} />}
-                                    label={collection.label}
-                                    onClick={() => navigate(`/market?filter=${collection.filter}`)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Top Performing Table */}
-                    <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                        <div className="p-4 border-b border-border flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-white">Top Performing Funds</h2>
-                            <Link to="/market" className="text-primary text-sm hover:underline">View All</Link>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">
-                                        <th className="px-4 py-3 font-medium">Fund Name</th>
-                                        <th className="px-4 py-3 font-medium text-right">1Y</th>
-                                        <th className="px-4 py-3 font-medium text-right">3Y</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan="3" className="px-4 py-8 text-center text-muted">Loading...</td>
-                                        </tr>
-                                    ) : (
-                                        funds.slice(0, 8).map((fund) => (
-                                            <tr
-                                                key={fund.id}
-                                                onClick={() => navigate(`/fund/${fund.id}`)}
-                                                className="hover:bg-white/5 cursor-pointer"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm font-bold text-primary">
-                                                            {fund.name?.charAt(0)}
-                                                        </div>
-                                                        <span className="text-sm text-white truncate max-w-[200px]">
-                                                            {fund.name?.replace(/Direct.*$/i, '').trim()}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className={`text-sm font-medium ${parseFloat(fund.return1y || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                        {parseFloat(fund.return1y || 0) >= 0 ? '+' : ''}{fund.return1y || '0.00'}%
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className={`text-sm font-medium ${parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                        {parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? '+' : ''}{fund.returns?.['1Y'] || fund.return1y || '0.00'}%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            {/* Popular Funds Section */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-white">Popular Funds</h2>
                 </div>
 
-                {/* Right Column - 1/3 width */}
-                <div className="space-y-6">
-                    {/* Your Investments */}
-                    <div className="bg-surface border border-border rounded-xl p-5">
-                        <h3 className="text-sm text-muted mb-4">Your Investments</h3>
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                    {loading ? (
+                        [...Array(4)].map((_, i) => (
+                            <div key={i} className="min-w-[200px] h-[120px] bg-surface border border-border rounded-xl animate-pulse" />
+                        ))
+                    ) : (
+                        funds.slice(0, 4).map((fund) => (
+                            <FundCard
+                                key={fund.id}
+                                fund={fund}
+                                onClick={() => navigate(`/fund/${fund.id}`)}
+                            />
+                        ))
+                    )}
+                </div>
 
-                        <div className="mb-4">
-                            <p className="text-xs text-muted">Current</p>
-                            <p className="text-2xl font-bold text-white">₹{investmentData.currentValue.toLocaleString()}</p>
-                        </div>
+                <Link to="/market" className="inline-flex items-center gap-1 text-primary text-sm font-medium mt-4 hover:underline">
+                    All Mutual Funds <ChevronRight className="w-4 h-4" />
+                </Link>
+            </div>
 
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted">1D returns</span>
-                                <span className="text-sm text-primary">+{investmentData.todayReturns} ({investmentData.todayPercent}%)</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted">Total returns</span>
-                                <span className="text-sm text-primary">+{investmentData.totalReturns} ({investmentData.totalPercent}%)</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted">Invested</span>
-                                <span className="text-sm text-white">₹{investmentData.invested.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm text-muted">XIRR</span>
-                                <span className="text-sm text-white">{investmentData.xirr}%</span>
-                            </div>
-                        </div>
-                    </div>
+            {/* Collections Section */}
+            <div>
+                <h2 className="text-lg font-semibold text-white mb-4">Collections</h2>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                    {collections.map((collection) => (
+                        <CollectionCard
+                            key={collection.type}
+                            icon={<CollectionIcon type={collection.type} />}
+                            label={collection.label}
+                            onClick={() => navigate(`/market?filter=${collection.filter}`)}
+                        />
+                    ))}
+                </div>
+            </div>
 
-                    {/* Products and Tools */}
-                    <div className="bg-surface border border-border rounded-xl p-5">
-                        <h3 className="text-sm text-muted mb-4">Products and Tools</h3>
-                        <div className="space-y-1">
-                            {tools.map((tool, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-muted">{tool.icon}</span>
-                                        <span className="text-sm text-white">{tool.label}</span>
-                                    </div>
-                                    {tool.badge && (
-                                        <span className="text-xs text-primary">{tool.badge}</span>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+            {/* Top Performing Table */}
+            <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-white">Top Performing Funds</h2>
+                    <Link to="/market" className="text-primary text-sm hover:underline">View All</Link>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">
+                                <th className="px-4 py-3 font-medium">Fund Name</th>
+                                <th className="px-4 py-3 font-medium text-right">1Y</th>
+                                <th className="px-4 py-3 font-medium text-right">3Y</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="3" className="px-4 py-8 text-center text-muted">Loading...</td>
+                                </tr>
+                            ) : (
+                                funds.slice(0, 8).map((fund) => (
+                                    <tr
+                                        key={fund.id}
+                                        onClick={() => navigate(`/fund/${fund.id}`)}
+                                        className="hover:bg-white/5 cursor-pointer"
+                                    >
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm font-bold text-primary">
+                                                    {fund.name?.charAt(0)}
+                                                </div>
+                                                <span className="text-sm text-white truncate max-w-[200px]">
+                                                    {fund.name?.replace(/Direct.*$/i, '').trim()}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <span className={`text-sm font-medium ${parseFloat(fund.return1y || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                {parseFloat(fund.return1y || 0) >= 0 ? '+' : ''}{fund.return1y || '0.00'}%
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <span className={`text-sm font-medium ${parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                {parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? '+' : ''}{fund.returns?.['1Y'] || fund.return1y || '0.00'}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

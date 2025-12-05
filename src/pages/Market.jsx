@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Star, X, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Star, Search } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const FUNDS_PER_PAGE = 20;
@@ -51,12 +51,6 @@ const Market = () => {
     const navigate = useNavigate();
 
     // Filter states
-    const [filters, setFilters] = useState({
-        category: null,
-        risk: null,
-        rating: null,
-        fundHouse: null,
-    });
     const [activeQuickFilters, setActiveQuickFilters] = useState([]);
 
     const quickFilters = [
@@ -78,25 +72,31 @@ const Market = () => {
                 const response = await fetch('https://api.mfapi.in/mf');
                 const data = await response.json();
 
-                // Filter only Direct Growth funds and add metadata
-                const directGrowthFunds = data
-                    .filter(fund =>
-                        fund.schemeName.toLowerCase().includes('direct') &&
-                        fund.schemeName.toLowerCase().includes('growth')
-                    )
-                    .map((fund, index) => ({
-                        id: fund.schemeCode,
-                        name: fund.schemeName.replace(/Direct.*$/i, '').replace(/\s+/g, ' ').trim(),
-                        fullName: fund.schemeName,
-                        category: getCategoryFromName(fund.schemeName),
-                        rating: getRandomRating(),
-                        risk: getRiskFromCategory(getCategoryFromName(fund.schemeName)),
-                        return1y: null,
-                        return3y: null,
-                        return5y: null,
-                    }));
+                // Use a Map to deduplicate by scheme code
+                const fundMap = new Map();
 
-                setAllFunds(directGrowthFunds);
+                data.forEach(fund => {
+                    const isDirectGrowth =
+                        fund.schemeName.toLowerCase().includes('direct') &&
+                        fund.schemeName.toLowerCase().includes('growth');
+
+                    if (isDirectGrowth && !fundMap.has(fund.schemeCode)) {
+                        fundMap.set(fund.schemeCode, {
+                            id: fund.schemeCode,
+                            name: cleanFundName(fund.schemeName),
+                            fullName: fund.schemeName,
+                            category: getCategoryFromName(fund.schemeName),
+                            rating: getRandomRating(fund.schemeCode),
+                            risk: getRiskFromCategory(getCategoryFromName(fund.schemeName)),
+                            return1y: null,
+                            return3y: null,
+                            return5y: null,
+                        });
+                    }
+                });
+
+                const uniqueFunds = Array.from(fundMap.values());
+                setAllFunds(uniqueFunds);
 
                 // Check URL params for initial filter
                 const filterParam = searchParams.get('filter');
@@ -111,14 +111,81 @@ const Market = () => {
         loadFunds();
     }, [searchParams]);
 
+    // Fetch returns for visible funds
+    useEffect(() => {
+        if (allFunds.length === 0) return;
+
+        const fetchReturns = async (schemeCode, index) => {
+            try {
+                const response = await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
+                const data = await response.json();
+
+                if (data && data.data && data.data.length > 0) {
+                    const navHistory = data.data;
+                    const currentNav = parseFloat(navHistory[0].nav);
+
+                    // Calculate returns
+                    const getNavAtDays = (days) => {
+                        if (navHistory.length <= days) return parseFloat(navHistory[navHistory.length - 1].nav);
+                        return parseFloat(navHistory[Math.min(days, navHistory.length - 1)].nav);
+                    };
+
+                    const nav1y = getNavAtDays(252); // ~252 trading days in a year
+                    const nav3y = getNavAtDays(756);
+                    const nav5y = getNavAtDays(1260);
+
+                    const return1y = ((currentNav - nav1y) / nav1y * 100).toFixed(2);
+                    const return3y = ((currentNav - nav3y) / nav3y * 100).toFixed(2);
+                    const return5y = ((currentNav - nav5y) / nav5y * 100).toFixed(2);
+
+                    setAllFunds(prev => {
+                        const updated = [...prev];
+                        const fundIndex = updated.findIndex(f => f.id === schemeCode);
+                        if (fundIndex !== -1) {
+                            updated[fundIndex] = {
+                                ...updated[fundIndex],
+                                return1y,
+                                return3y,
+                                return5y
+                            };
+                        }
+                        return updated;
+                    });
+                }
+            } catch (error) {
+                // Silently fail for individual fund errors
+            }
+        };
+
+        // Fetch returns for first 50 funds progressively
+        const startIndex = (currentPage - 1) * FUNDS_PER_PAGE;
+        const visibleFunds = filteredFunds.slice(startIndex, startIndex + FUNDS_PER_PAGE);
+
+        visibleFunds.forEach((fund, index) => {
+            if (fund.return1y === null) {
+                setTimeout(() => {
+                    fetchReturns(fund.id, index);
+                }, index * 200); // 200ms delay between requests
+            }
+        });
+    }, [currentPage, allFunds.length]);
+
     // Helper functions
+    const cleanFundName = (name) => {
+        return name
+            .replace(/\s*-?\s*Direct\s*(Plan)?\s*-?\s*/gi, ' ')
+            .replace(/\s*-?\s*Growth\s*(Option)?\s*-?\s*/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
     const getCategoryFromName = (name) => {
         const lowerName = name.toLowerCase();
-        if (lowerName.includes('small cap')) return 'Equity Small Cap';
-        if (lowerName.includes('mid cap')) return 'Equity Mid Cap';
-        if (lowerName.includes('large cap')) return 'Equity Large Cap';
+        if (lowerName.includes('small cap') || lowerName.includes('smallcap')) return 'Equity Small Cap';
+        if (lowerName.includes('mid cap') || lowerName.includes('midcap')) return 'Equity Mid Cap';
+        if (lowerName.includes('large cap') || lowerName.includes('largecap')) return 'Equity Large Cap';
         if (lowerName.includes('flexi cap') || lowerName.includes('flexicap')) return 'Equity Flexi Cap';
-        if (lowerName.includes('multi cap')) return 'Equity Multi Cap';
+        if (lowerName.includes('multi cap') || lowerName.includes('multicap')) return 'Equity Multi Cap';
         if (lowerName.includes('elss') || lowerName.includes('tax')) return 'Equity ELSS';
         if (lowerName.includes('gold')) return 'Commodities Gold';
         if (lowerName.includes('silver')) return 'Commodities Silver';
@@ -129,9 +196,12 @@ const Market = () => {
         return 'Equity';
     };
 
-    const getRandomRating = () => {
-        const ratings = [3, 4, 5, 4, 5, 4, 3, 5, 4, 4];
-        return ratings[Math.floor(Math.random() * ratings.length)];
+    const getRandomRating = (schemeCode) => {
+        // Use scheme code as seed for consistent rating
+        const hash = schemeCode % 10;
+        if (hash < 2) return 3;
+        if (hash < 5) return 4;
+        return 5;
     };
 
     const getRiskFromCategory = (category) => {
@@ -183,7 +253,7 @@ const Market = () => {
                     result = result.filter(f => f.rating >= 4);
                     break;
                 case 'high-return':
-                    // Show all for now
+                    result = result.filter(f => parseFloat(f.return1y || 0) > 20);
                     break;
                 case 'gold':
                     result = result.filter(f => f.category.includes('Gold') || f.category.includes('Silver'));
@@ -332,13 +402,31 @@ const Market = () => {
                                         <span className="text-sm text-muted">{fund.category}</span>
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <span className="text-sm text-primary">--</span>
+                                        {fund.return1y ? (
+                                            <span className={`text-sm ${parseFloat(fund.return1y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                {parseFloat(fund.return1y) >= 0 ? '+' : ''}{fund.return1y}%
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-muted">--</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <span className="text-sm text-primary">--</span>
+                                        {fund.return3y ? (
+                                            <span className={`text-sm ${parseFloat(fund.return3y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                {parseFloat(fund.return3y) >= 0 ? '+' : ''}{fund.return3y}%
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-muted">--</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <span className="text-sm text-muted">--</span>
+                                        {fund.return5y ? (
+                                            <span className={`text-sm ${parseFloat(fund.return5y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                {parseFloat(fund.return5y) >= 0 ? '+' : ''}{fund.return5y}%
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-muted">--</span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-center">
                                         <StarRating rating={fund.rating} />
