@@ -743,6 +743,48 @@ app.get('/api/stock/details', async (req, res) => {
     }
 });
 
+// Stock Returns Endpoint - fetches 1M, 1Y, 3Y returns for a stock
+app.get('/api/stock/returns', async (req, res) => {
+    const { name } = req.query;
+    if (!name) {
+        return res.status(400).json({ error: "Stock name is required" });
+    }
+
+    try {
+        const cacheKey = `stock_returns_${name}`;
+
+        // Check Redis cache first
+        const cachedReturns = await redisGet(cacheKey);
+        if (cachedReturns) {
+            console.log(`📦 Redis HIT (stock returns): ${name}`);
+            return res.json(cachedReturns);
+        }
+
+        // Check memory cache
+        const memCached = stockDetailsCache.get(cacheKey);
+        if (memCached) {
+            console.log(`📦 Memory HIT (stock returns): ${name}`);
+            return res.json(memCached);
+        }
+
+        console.log(`📊 Fetching returns from TradingView for: ${name}`);
+        const returns = await fetchReturnsFromTV(name);
+
+        if (!returns) {
+            return res.json({ return1m: null, return1y: null, return3y: null });
+        }
+
+        // Cache the result
+        await redisSet(cacheKey, returns, 28800); // 8 hours
+        stockDetailsCache.set(cacheKey, returns);
+
+        res.json(returns);
+    } catch (error) {
+        console.error(`Error fetching stock returns for ${name}:`, error);
+        res.json({ return1m: null, return1y: null, return3y: null });
+    }
+});
+
 // ============ TOP FUNDS PRE-CALCULATION ============
 
 const MFAPI_BASE = 'https://api.mfapi.in/mf';

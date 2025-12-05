@@ -17,8 +17,8 @@ const FundDetails = () => {
     const handleRefreshData = async () => {
         try {
             setRefreshing(true);
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            await fetch(`${API_URL}/api/cache/clear`, { method: 'POST' });
+            const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+            await fetch(`${BACKEND_URL}/api/cache/clear`, { method: 'POST' });
 
             const data = await getFundDetails(id);
             setFund(data);
@@ -49,16 +49,55 @@ const FundDetails = () => {
         }
     }, [id]);
 
+    // Fetch stock returns asynchronously after holdings are loaded
+    useEffect(() => {
+        if (!fund || !fund.holdings || fund.holdings.length === 0) return;
+
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
+        const fetchStockReturns = async (stockName, index) => {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/stock/returns?name=${encodeURIComponent(stockName)}`);
+                if (response.ok) {
+                    const returns = await response.json();
+                    // Update the specific holding with returns
+                    setFund(prevFund => {
+                        if (!prevFund || !prevFund.holdings) return prevFund;
+                        const updatedHoldings = [...prevFund.holdings];
+                        updatedHoldings[index] = {
+                            ...updatedHoldings[index],
+                            return1m: returns.return1m,
+                            return1y: returns.return1y,
+                            return3y: returns.return3y
+                        };
+                        return { ...prevFund, holdings: updatedHoldings };
+                    });
+                }
+            } catch (error) {
+                console.error(`Error fetching returns for ${stockName}:`, error);
+            }
+        };
+
+        // Fetch returns for first 10 holdings (to avoid too many requests)
+        const holdingsToEnrich = fund.holdings.slice(0, 10);
+        holdingsToEnrich.forEach((holding, index) => {
+            // Stagger requests to avoid overwhelming the server
+            setTimeout(() => {
+                fetchStockReturns(holding.name, index);
+            }, index * 500); // 500ms delay between each request
+        });
+    }, [fund?.holdings?.length]);
+
     const handleAIAnalysis = async () => {
         setShowAI(true);
         setAiLoading(true);
         setAiError(null);
 
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
             const token = localStorage.getItem('token');
 
-            const response = await fetch(`${API_URL}/api/ai/analyze`, {
+            const response = await fetch(`${BACKEND_URL}/api/ai/analyze`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
