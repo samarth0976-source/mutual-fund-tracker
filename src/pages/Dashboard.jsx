@@ -130,55 +130,72 @@ const Dashboard = () => {
             </div>
 
             {/* Top Performing Table */}
-            <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">Top Performing Funds</h2>
-                    <Link to="/market" className="text-primary text-sm hover:underline">View All</Link>
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                <div className="p-6 border-b border-border flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white">Top 20 Performing Funds</h2>
+                    <Link to="/market" className="text-primary text-sm font-medium hover:underline">View All</Link>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">
-                                <th className="px-4 py-3 font-medium">Fund Name</th>
-                                <th className="px-4 py-3 font-medium text-right">1Y</th>
-                                <th className="px-4 py-3 font-medium text-right">3Y</th>
+                            <tr className="bg-white/5 text-muted text-sm uppercase tracking-wider">
+                                <th className="px-6 py-4 font-medium">Fund Name</th>
+                                <th className="px-6 py-4 font-medium">Rating</th>
+                                <th className="px-6 py-4 font-medium">NAV</th>
+                                <th className="px-6 py-4 font-medium">1D Return</th>
+                                <th className="px-6 py-4 font-medium">6M Return</th>
+                                <th className="px-6 py-4 font-medium">1Y Return</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="3" className="px-4 py-8 text-center text-muted">Loading...</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-muted">Loading funds data...</td>
                                 </tr>
-                            ) : (
-                                funds.slice(0, 8).map((fund) => (
-                                    <tr
-                                        key={fund.id}
-                                        onClick={() => navigate(`/fund/${fund.id}`)}
-                                        className="hover:bg-white/5 cursor-pointer"
-                                    >
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm font-bold text-primary">
-                                                    {fund.name?.charAt(0)}
-                                                </div>
-                                                <span className="text-sm text-white truncate max-w-[200px]">
-                                                    {fund.name?.replace(/Direct.*$/i, '').trim()}
-                                                </span>
+                            ) : funds.slice(0, 20).map((fund) => (
+                                <tr key={fund.id} onClick={() => navigate(`/fund/${fund.id}`)} className="hover:bg-white/5 transition-colors group cursor-pointer">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-lg font-bold text-primary">
+                                                {fund.name?.charAt(0)}
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <span className={`text-sm font-medium ${parseFloat(fund.return1y || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                {parseFloat(fund.return1y || 0) >= 0 ? '+' : ''}{fund.return1y || '0.00'}%
+                                            <div>
+                                                <p className="font-medium text-white group-hover:text-primary transition-colors">{fund.name}</p>
+                                                <p className="text-xs text-muted">Equity • Growth</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex gap-1">
+                                            {[...Array(5)].map((_, i) => (
+                                                <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < (fund.rating || 4) ? 'bg-secondary' : 'bg-border'}`} />
+                                            ))}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-mono text-white">₹{fund.nav || '...'}</td>
+                                    <td className="px-6 py-4 font-medium">
+                                        {fund.return1d ? (
+                                            <span className={parseFloat(fund.return1d) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                {parseFloat(fund.return1d) >= 0 ? '+' : ''}{fund.return1d}%
                                             </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <span className={`text-sm font-medium ${parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                {parseFloat(fund.returns?.['1Y'] || 0) >= 0 ? '+' : ''}{fund.returns?.['1Y'] || fund.return1y || '0.00'}%
+                                        ) : '...'}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium">
+                                        {fund.return6m ? (
+                                            <span className={parseFloat(fund.return6m) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                {parseFloat(fund.return6m) >= 0 ? '+' : ''}{fund.return6m}%
                                             </span>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
+                                        ) : '...'}
+                                    </td>
+                                    <td className="px-6 py-4 font-medium">
+                                        {fund.return1y ? (
+                                            <span className={parseFloat(fund.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                {parseFloat(fund.return1y) >= 0 ? '+' : ''}{fund.return1y}%
+                                            </span>
+                                        ) : '...'}
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
