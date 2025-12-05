@@ -23,7 +23,7 @@ VITE_API_URL=http://localhost:3000
 MONGODB_URI=mongodb+srv://fundtracker:Samarth09@cluster0.ol4rfqi.mongodb.net/fundtracker?retryWrites=true&w=majority&appName=Cluster0
 
 # Google Gemini AI API Key
-GEMINI_API_KEY=AIzaSyCwBriI-IWSTxOiQRL_KSJdWQu3hQ_m3bk
+GEMINI_API_KEY=AIzaSyBhyq3nZDduh6q8T4lOlQSwJ-7ng9b2x5U
 `;
 
 try {
