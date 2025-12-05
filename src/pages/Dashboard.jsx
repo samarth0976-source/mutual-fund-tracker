@@ -1,3 +1,4 @@
+// Dashboard component - v2
 import React, { useEffect, useState } from 'react';
 import { getTopMutualFunds } from '../services/api';
 import { TrendingUp, Star, Building2, Gem, BarChart3, PiggyBank, ChevronRight } from 'lucide-react';
