@@ -583,69 +583,58 @@ app.get('/api/holdings', async (req, res) => {
             });
         }
 
-        console.log(`⚡ Fetching from RapidAPI: ${name} (Code: ${schemeCode})`);
+        // Try Python Holdings Service first (yahooquery)
+        const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL;
 
-        // RapidAPI Configuration
-        const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+        if (PYTHON_SERVICE_URL) {
+            console.log(`🐍 Fetching from Python service: ${name}`);
+            try {
+                const pythonResponse = await axios.get(
+                    `${PYTHON_SERVICE_URL}/fund-holdings`,
+                    {
+                        params: { name },
+                        timeout: 10000
+                    }
+                );
 
-        if (!RAPIDAPI_KEY) {
-            console.warn('⚠️ RapidAPI key not configured, falling back to Groww scraping');
-            // Fallback to Groww scraping if no API key
-            return await fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey);
-        }
-
-        // Use RapidAPI for holdings data
-        try {
-            const rapidApiOptions = {
-                method: 'GET',
-                url: `https://india-mutual-funds-portfolio-holding.p.rapidapi.com/v1/mutualfunds/${schemeCode}/portfolio`,
-                headers: {
-                    'X-RapidAPI-Key': RAPIDAPI_KEY,
-                    'X-RapidAPI-Host': 'india-mutual-funds-portfolio-holding.p.rapidapi.com'
-                }
-            };
-
-            const apiResponse = await axios.request(rapidApiOptions);
-
-            if (apiResponse.data && apiResponse.data.data) {
-                const holdingsRaw = apiResponse.data.data.holdings || apiResponse.data.data;
-
-                let holdings = [];
-                if (Array.isArray(holdingsRaw)) {
-                    holdings = holdingsRaw.map(item => ({
-                        name: item.company_name || item.name || item.stock_name || "Unknown",
-                        sector: item.sector || item.sector_name || "Equity",
-                        allocation: parseFloat(item.percentage || item.corpus_per || item.weight || 0).toFixed(2),
+                if (pythonResponse.data && pythonResponse.data.holdings) {
+                    const holdings = pythonResponse.data.holdings.map(item => ({
+                        name: item.name || "Unknown",
+                        sector: item.sector || "Equity",
+                        allocation: item.allocation?.toString() || "0.00",
                         return1y: null,
                         return3y: null,
                         return1m: null,
                         isReal: true
                     }));
+
+                    const response = {
+                        holdings,
+                        sectors: pythonResponse.data.sectors || [],
+                        meta: {
+                            fund: pythonResponse.data.fundName || name,
+                            totalHoldings: holdings.length,
+                            dataSource: 'Yahoo Finance (Python)',
+                            yahooSymbol: pythonResponse.data.symbol,
+                            timestamp: new Date().toISOString()
+                        }
+                    };
+
+                    // Cache in Redis and Memory
+                    await redisSet(holdingsCacheKey, response);
+                    holdingsCache.set(holdingsCacheKey, response);
+                    console.log(`✅ Cached from Python: ${name} (${holdings.length} holdings)`);
+
+                    return res.json(response);
                 }
-
-                const response = {
-                    holdings,
-                    meta: {
-                        fund: name,
-                        totalHoldings: holdings.length,
-                        dataSource: 'RapidAPI',
-                        timestamp: new Date().toISOString()
-                    }
-                };
-
-                // Cache in Redis and Memory
-                await redisSet(holdingsCacheKey, response);
-                holdingsCache.set(holdingsCacheKey, response);
-                console.log(`✅ Cached: ${name} (${holdings.length} holdings)`);
-
-                return res.json(response);
-            } else {
-                throw new Error('Invalid API response structure');
+            } catch (pythonError) {
+                console.warn(`🐍 Python service failed: ${pythonError.message}`);
             }
-        } catch (apiError) {
-            console.warn(`RapidAPI failed: ${apiError.message}, falling back to Groww`);
-            return await fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey);
         }
+
+        // Fallback to Groww scraping
+        console.log(`🔄 Falling back to Groww for: ${name}`);
+        return await fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey);
 
     } catch (error) {
         console.error('Error fetching holdings:', error.message);
