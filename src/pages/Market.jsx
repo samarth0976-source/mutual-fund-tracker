@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Star, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Star, Search, TrendingUp, BarChart3 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ETFTracker from '../components/ETFTracker';
+import MarketIndices from '../components/MarketIndices';
 
 const FUNDS_PER_PAGE = 20;
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
@@ -10,8 +12,8 @@ const FilterChip = ({ label, active, onClick, hasDropdown }) => (
     <button
         onClick={onClick}
         className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${active
-                ? 'bg-primary text-black'
-                : 'bg-surface border border-border text-muted hover:text-white hover:border-primary/50'
+            ? 'bg-primary text-black'
+            : 'bg-surface border border-border text-muted hover:text-white hover:border-primary/50'
             }`}
     >
         {label}
@@ -49,6 +51,9 @@ const Market = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    // Tab state from URL params
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'mf');
 
     // Filter states
     const [activeQuickFilters, setActiveQuickFilters] = useState([]);
@@ -297,204 +302,245 @@ const Market = () => {
     };
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-white mb-2">All Mutual Funds</h1>
+        <div className="space-y-6 animate-fade-in">
+            {/* Live Market Banner */}
+            <MarketIndices />
+
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-1 p-1 bg-surface rounded-xl border border-border w-fit">
+                <button
+                    onClick={() => setActiveTab('mf')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'mf'
+                        ? 'bg-primary text-white shadow-lg'
+                        : 'text-muted hover:text-white hover:bg-card-bg'
+                        }`}
+                >
+                    <TrendingUp size={16} />
+                    Mutual Funds
+                </button>
+                <button
+                    onClick={() => setActiveTab('etf')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'etf'
+                        ? 'bg-primary text-white shadow-lg'
+                        : 'text-muted hover:text-white hover:bg-card-bg'
+                        }`}
+                >
+                    <BarChart3 size={16} />
+                    ETFs
+                </button>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
-                <input
-                    type="text"
-                    placeholder="Search mutual funds..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-xl text-white placeholder-muted focus:outline-none focus:border-primary"
-                />
-            </div>
+            {/* ETF Tab Content */}
+            {activeTab === 'etf' && (
+                <ETFTracker />
+            )}
 
-            {/* Filter Chips */}
-            <div className="flex flex-wrap items-center gap-2">
-                <FilterChip label="Categories" hasDropdown />
-                <FilterChip label="Risk" hasDropdown />
-                <FilterChip label="Ratings" hasDropdown />
-                <FilterChip label="Fund House" hasDropdown />
-
-                <div className="w-px h-6 bg-border mx-2" />
-
-                {quickFilters.map(filter => (
-                    <FilterChip
-                        key={filter.id}
-                        label={filter.label}
-                        active={activeQuickFilters.includes(filter.id)}
-                        onClick={() => toggleQuickFilter(filter.id)}
-                    />
-                ))}
-
-                {activeQuickFilters.length > 0 && (
-                    <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-primary hover:underline ml-2"
-                    >
-                        Clear All
-                    </button>
-                )}
-            </div>
-
-            {/* Results count */}
-            <div className="text-sm text-muted">
-                Fund Name ({filteredFunds.length.toLocaleString()} results)
-            </div>
-
-            {/* Table */}
-            <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">
-                                <th className="px-4 py-3 font-medium w-[40%]">Fund Name</th>
-                                <th className="px-4 py-3 font-medium">Category</th>
-                                <th className="px-4 py-3 font-medium text-right">1Y ▼</th>
-                                <th className="px-4 py-3 font-medium text-right">3Y</th>
-                                <th className="px-4 py-3 font-medium text-right">5Y</th>
-                                <th className="px-4 py-3 font-medium text-center">Rating</th>
-                                <th className="px-4 py-3 font-medium">Risk</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {loading ? (
-                                [...Array(10)].map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-3/4" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-24" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-8 mx-auto" /></td>
-                                        <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-16" /></td>
-                                    </tr>
-                                ))
-                            ) : displayFunds.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" className="px-4 py-8 text-center text-muted">
-                                        No funds found matching your criteria
-                                    </td>
-                                </tr>
-                            ) : displayFunds.map((fund) => (
-                                <tr
-                                    key={fund.id}
-                                    onClick={() => navigate(`/fund/${fund.id}`)}
-                                    className="hover:bg-white/5 cursor-pointer transition-colors"
-                                >
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm font-bold text-primary border border-primary/20 shrink-0">
-                                                {fund.name.charAt(0)}
-                                            </div>
-                                            <span className="text-sm text-white truncate max-w-[250px]">
-                                                {fund.name}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-sm text-muted">{fund.category}</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {fund.return1y ? (
-                                            <span className={`text-sm ${parseFloat(fund.return1y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                {parseFloat(fund.return1y) >= 0 ? '+' : ''}{fund.return1y}%
-                                            </span>
-                                        ) : (
-                                            <span className="text-sm text-muted">--</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {fund.return3y ? (
-                                            <span className={`text-sm ${parseFloat(fund.return3y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                {parseFloat(fund.return3y) >= 0 ? '+' : ''}{fund.return3y}%
-                                            </span>
-                                        ) : (
-                                            <span className="text-sm text-muted">--</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {fund.return5y ? (
-                                            <span className={`text-sm ${parseFloat(fund.return5y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
-                                                {parseFloat(fund.return5y) >= 0 ? '+' : ''}{fund.return5y}%
-                                            </span>
-                                        ) : (
-                                            <span className="text-sm text-muted">--</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                        <StarRating rating={fund.rating} />
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <RiskBadge risk={fund.risk} />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {!loading && totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-t border-border">
-                        <div className="text-sm text-muted">
-                            Showing {((currentPage - 1) * FUNDS_PER_PAGE) + 1} to {Math.min(currentPage * FUNDS_PER_PAGE, filteredFunds.length)} of {filteredFunds.length.toLocaleString()} funds
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => goToPage(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-
-                            {/* Page numbers */}
-                            {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                                let page;
-                                if (totalPages <= 5) {
-                                    page = i + 1;
-                                } else if (currentPage <= 3) {
-                                    page = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    page = totalPages - 4 + i;
-                                } else {
-                                    page = currentPage - 2 + i;
-                                }
-
-                                return (
-                                    <button
-                                        key={page}
-                                        onClick={() => goToPage(page)}
-                                        className={`px-3 py-1 rounded-lg text-sm ${currentPage === page
-                                                ? 'bg-primary text-black font-medium'
-                                                : 'hover:bg-white/10 text-white'
-                                            }`}
-                                    >
-                                        {page}
-                                    </button>
-                                );
-                            })}
-
-                            <button
-                                onClick={() => goToPage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
+            {/* Mutual Funds Tab Content */}
+            {activeTab === 'mf' && (
+                <>
+                    {/* Header */}
+                    <div>
+                        <h1 className="text-2xl font-bold text-white mb-2">All Mutual Funds</h1>
+                        <p className="text-muted text-sm">Explore {allFunds.length.toLocaleString()} mutual fund schemes</p>
                     </div>
-                )}
-            </div>
+
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+                        <input
+                            type="text"
+                            placeholder="Search mutual funds..."
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                            className="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-xl text-white placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                        />
+                    </div>
+
+                    {/* Filter Chips */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <FilterChip label="Categories" hasDropdown />
+                        <FilterChip label="Risk" hasDropdown />
+                        <FilterChip label="Ratings" hasDropdown />
+                        <FilterChip label="Fund House" hasDropdown />
+
+                        <div className="w-px h-6 bg-border mx-2" />
+
+                        {quickFilters.map(filter => (
+                            <FilterChip
+                                key={filter.id}
+                                label={filter.label}
+                                active={activeQuickFilters.includes(filter.id)}
+                                onClick={() => toggleQuickFilter(filter.id)}
+                            />
+                        ))}
+
+                        {activeQuickFilters.length > 0 && (
+                            <button
+                                onClick={clearAllFilters}
+                                className="text-sm text-primary hover:underline ml-2"
+                            >
+                                Clear All
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Results count */}
+                    <div className="text-sm text-muted">
+                        Fund Name ({filteredFunds.length.toLocaleString()} results)
+                    </div>
+
+                    {/* Table */}
+                    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">
+                                        <th className="px-4 py-3 font-medium w-[40%]">Fund Name</th>
+                                        <th className="px-4 py-3 font-medium">Category</th>
+                                        <th className="px-4 py-3 font-medium text-right">1Y ▼</th>
+                                        <th className="px-4 py-3 font-medium text-right">3Y</th>
+                                        <th className="px-4 py-3 font-medium text-right">5Y</th>
+                                        <th className="px-4 py-3 font-medium text-center">Rating</th>
+                                        <th className="px-4 py-3 font-medium">Risk</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {loading ? (
+                                        [...Array(10)].map((_, i) => (
+                                            <tr key={i} className="animate-pulse">
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-3/4" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-24" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-12 ml-auto" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-8 mx-auto" /></td>
+                                                <td className="px-4 py-4"><div className="h-4 bg-white/10 rounded w-16" /></td>
+                                            </tr>
+                                        ))
+                                    ) : displayFunds.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="7" className="px-4 py-8 text-center text-muted">
+                                                No funds found matching your criteria
+                                            </td>
+                                        </tr>
+                                    ) : displayFunds.map((fund) => (
+                                        <tr
+                                            key={fund.id}
+                                            onClick={() => navigate(`/fund/${fund.id}`)}
+                                            className="hover:bg-white/5 cursor-pointer transition-colors"
+                                        >
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm font-bold text-primary border border-primary/20 shrink-0">
+                                                        {fund.name.charAt(0)}
+                                                    </div>
+                                                    <span className="text-sm text-white truncate max-w-[250px]">
+                                                        {fund.name}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="text-sm text-muted">{fund.category}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {fund.return1y ? (
+                                                    <span className={`text-sm ${parseFloat(fund.return1y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                        {parseFloat(fund.return1y) >= 0 ? '+' : ''}{fund.return1y}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-muted">--</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {fund.return3y ? (
+                                                    <span className={`text-sm ${parseFloat(fund.return3y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                        {parseFloat(fund.return3y) >= 0 ? '+' : ''}{fund.return3y}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-muted">--</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {fund.return5y ? (
+                                                    <span className={`text-sm ${parseFloat(fund.return5y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                                        {parseFloat(fund.return5y) >= 0 ? '+' : ''}{fund.return5y}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-muted">--</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <StarRating rating={fund.rating} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <RiskBadge risk={fund.risk} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {!loading && totalPages > 1 && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-t border-border">
+                                <div className="text-sm text-muted">
+                                    Showing {((currentPage - 1) * FUNDS_PER_PAGE) + 1} to {Math.min(currentPage * FUNDS_PER_PAGE, filteredFunds.length)} of {filteredFunds.length.toLocaleString()} funds
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
+                                    {/* Page numbers */}
+                                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                                        let page;
+                                        if (totalPages <= 5) {
+                                            page = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            page = i + 1;
+                                        } else if (currentPage >= totalPages - 2) {
+                                            page = totalPages - 4 + i;
+                                        } else {
+                                            page = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <button
+                                                key={page}
+                                                onClick={() => goToPage(page)}
+                                                className={`px-3 py-1 rounded-lg text-sm ${currentPage === page
+                                                    ? 'bg-primary text-black font-medium'
+                                                    : 'hover:bg-white/10 text-white'
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        );
+                                    })}
+
+                                    <button
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+            </>
+            )}
         </div>
     );
 };
 
 export default Market;
+
+
+

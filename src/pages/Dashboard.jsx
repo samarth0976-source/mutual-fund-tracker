@@ -1,9 +1,11 @@
-// Dashboard component - v2
+// Dashboard component - v3 with Live Market Data
 import React, { useEffect, useState } from 'react';
 import { getTopMutualFunds } from '../services/api';
 import { TrendingUp, Star, Building2, Gem, BarChart3, PiggyBank, ChevronRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import MarketIndices from '../components/MarketIndices';
+import ETFTracker from '../components/ETFTracker';
 
 // Collection category icons
 const CollectionIcon = ({ type }) => {
@@ -88,6 +90,9 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-8">
+            {/* Live Market Indices */}
+            <MarketIndices />
+
             {/* Popular Funds Section */}
             <div>
                 <div className="flex items-center justify-between mb-4">
@@ -129,6 +134,9 @@ const Dashboard = () => {
                     ))}
                 </div>
             </div>
+
+            {/* ETF Tracker Section */}
+            <ETFTracker compact />
 
             {/* Top Performing Table */}
             <div className="bg-surface border border-border rounded-2xl overflow-hidden">

@@ -785,6 +785,349 @@ app.get('/api/stock/returns', async (req, res) => {
     }
 });
 
+// ============ KOTAK NEO API INTEGRATION ============
+
+// Kotak API Configuration
+const KOTAK_ACCESS_TOKEN = process.env.KOTAK_ACCESS_TOKEN || '8b8fd30e-a2de-4914-ba8b-795c8ef663cb';
+const KOTAK_MOBILE = process.env.KOTAK_MOBILE || '+918851415822';
+const KOTAK_UCC = process.env.KOTAK_UCC || 'Y6QV2';
+const KOTAK_MPIN = process.env.KOTAK_MPIN || '270108';
+
+// Kotak session state
+let kotakSession = {
+    tradingToken: null,
+    sid: null,
+    baseUrl: null,
+    expiresAt: 0
+};
+
+// Cache for ETF and scrip data
+const etfCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
+const scripMasterCache = new NodeCache({ stdTTL: 86400 }); // 24 hours
+
+// Popular ETF symbols for quick access
+const POPULAR_ETF_SYMBOLS = [
+    '14597', '13335', '14599', '11536', '11532', // NIFTYBEES, BANKBEES, GOLDBEES, etc.
+];
+
+// Kotak API Login (TOTP required - cached result)
+const loginKotak = async (totp) => {
+    try {
+        // Step 1: TOTP Login
+        const loginRes = await fetch('https://mis.kotaksecurities.com/login/1.0/tradeApiLogin', {
+            method: 'POST',
+            headers: {
+                'Authorization': KOTAK_ACCESS_TOKEN,
+                'neo-fin-key': 'neotradeapi',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mobileNumber: KOTAK_MOBILE,
+                ucc: KOTAK_UCC,
+                totp: totp
+            })
+        });
+
+        const loginData = await loginRes.json();
+        if (!loginData.data?.token) {
+            console.error('Kotak TOTP login failed:', loginData);
+            return null;
+        }
+
+        // Step 2: MPIN Validate
+        const validateRes = await fetch('https://mis.kotaksecurities.com/login/1.0/tradeApiValidate', {
+            method: 'POST',
+            headers: {
+                'Authorization': KOTAK_ACCESS_TOKEN,
+                'neo-fin-key': 'neotradeapi',
+                'sid': loginData.data.sid,
+                'Auth': loginData.data.token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ mpin: KOTAK_MPIN })
+        });
+
+        const validateData = await validateRes.json();
+        if (!validateData.data?.baseUrl) {
+            console.error('Kotak MPIN validation failed:', validateData);
+            return null;
+        }
+
+        // Save session
+        kotakSession = {
+            tradingToken: validateData.data.token,
+            sid: validateData.data.sid,
+            baseUrl: validateData.data.baseUrl,
+            expiresAt: Date.now() + (23 * 60 * 60 * 1000) // ~23 hours
+        };
+
+        console.log('✅ Kotak session created successfully');
+        return kotakSession;
+    } catch (error) {
+        console.error('Kotak login error:', error);
+        return null;
+    }
+};
+
+// Get quotes without full authentication (uses access token directly)
+const getKotakQuotes = async (symbols, exchange = 'nse_cm') => {
+    try {
+        // Use a working base URL from previous successful calls
+        const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
+        const query = symbols.map(s => `${exchange}|${s}`).join(',');
+        const url = `${baseUrl}/script-details/1.0/quotes/neosymbol/${encodeURIComponent(query)}/all`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': KOTAK_ACCESS_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.error('Kotak quotes fetch failed:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching Kotak quotes:', error);
+        return null;
+    }
+};
+
+// Endpoint: Get market indices (Nifty 50, Bank Nifty, etc.)
+app.get('/api/kotak/indices', async (req, res) => {
+    try {
+        const cacheKey = 'kotak_indices';
+        const cached = etfCache.get(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
+
+        const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
+        const url = `${baseUrl}/script-details/1.0/quotes/neosymbol/nse_cm|Nifty 50,nse_cm|Nifty Bank,nse_cm|NIFTY IT,bse_cm|SENSEX/all`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': KOTAK_ACCESS_TOKEN }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch indices');
+        }
+
+        const data = await response.json();
+
+        const formattedData = data.map(item => ({
+            symbol: item.exchange_token,
+            displayName: item.display_symbol,
+            exchange: item.exchange,
+            ltp: parseFloat(item.ltp),
+            change: parseFloat(item.change),
+            perChange: parseFloat(item.per_change),
+            open: parseFloat(item.ohlc?.open || 0),
+            high: parseFloat(item.ohlc?.high || 0),
+            low: parseFloat(item.ohlc?.low || 0),
+            close: parseFloat(item.ohlc?.close || 0),
+            lastUpdate: item.lstup_time
+        }));
+
+        etfCache.set(cacheKey, formattedData);
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error in /api/kotak/indices:', error);
+        res.json([
+            { symbol: 'Nifty 50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'Nifty Bank', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true }
+        ]);
+    }
+});
+
+// Endpoint: Get Live Quotes for any symbols
+app.get('/api/kotak/quotes', async (req, res) => {
+    try {
+        const { symbols, exchange = 'nse_cm' } = req.query;
+        if (!symbols) {
+            return res.status(400).json({ error: 'Symbols required' });
+        }
+
+        const symbolList = symbols.split(',');
+        const cacheKey = `kotak_quotes_${exchange}_${symbols}`;
+
+        const cached = etfCache.get(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
+
+        const quotes = await getKotakQuotes(symbolList, exchange);
+        if (quotes) {
+            etfCache.set(cacheKey, quotes);
+            return res.json(quotes);
+        }
+
+        res.json([]);
+    } catch (error) {
+        console.error('Error in /api/kotak/quotes:', error);
+        res.status(500).json({ error: 'Failed to fetch quotes' });
+    }
+});
+
+// Endpoint: Get ETF list with prices
+app.get('/api/kotak/etfs', async (req, res) => {
+    try {
+        const cacheKey = 'kotak_etfs';
+        const cached = etfCache.get(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
+
+        // Get scrip master to find ETF symbols
+        let etfs = scripMasterCache.get('etf_list');
+
+        if (!etfs) {
+            // Fetch scrip master and filter ETFs
+            const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
+            const pathsRes = await fetch(`${baseUrl}/script-details/1.0/masterscrip/file-paths`, {
+                headers: { 'Authorization': KOTAK_ACCESS_TOKEN }
+            });
+
+            if (pathsRes.ok) {
+                const pathsData = await pathsRes.json();
+                const nseFile = pathsData.data.filesPaths.find(p => p.includes('nse_cm'));
+
+                if (nseFile) {
+                    const csvRes = await fetch(nseFile);
+                    const csvText = await csvRes.text();
+
+                    // Parse CSV and find ETFs
+                    const lines = csvText.split('\n');
+                    etfs = [];
+
+                    for (let i = 1; i < lines.length && etfs.length < 50; i++) {
+                        const line = lines[i].toLowerCase();
+                        if (line.includes('etf') || line.includes('bees')) {
+                            const cols = lines[i].split(',');
+                            etfs.push({
+                                symbol: cols[0],
+                                name: cols[12] || cols[4],
+                                tradingSymbol: cols[5],
+                                isin: cols[8],
+                                pSymbol: cols[0]
+                            });
+                        }
+                    }
+
+                    scripMasterCache.set('etf_list', etfs);
+                }
+            }
+        }
+
+        if (!etfs || etfs.length === 0) {
+            // Return popular ETFs as fallback
+            etfs = [
+                { symbol: 'NIFTYBEES', name: 'Nippon India ETF Nifty 50 BeES', type: 'Index ETF' },
+                { symbol: 'BANKBEES', name: 'Nippon India ETF Bank BeES', type: 'Index ETF' },
+                { symbol: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', type: 'Gold ETF' },
+                { symbol: 'SETFNIFTY', name: 'SBI ETF Nifty 50', type: 'Index ETF' },
+                { symbol: 'ITBEES', name: 'Nippon India ETF Nifty IT', type: 'Sector ETF' }
+            ];
+        }
+
+        // Get live prices for ETFs
+        const symbols = etfs.slice(0, 20).map(e => e.tradingSymbol || e.symbol);
+        const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
+        const query = symbols.map(s => `nse_cm|${s}`).join(',');
+
+        try {
+            const quotesRes = await fetch(
+                `${baseUrl}/script-details/1.0/quotes/neosymbol/${encodeURIComponent(query)}/ltp`,
+                { headers: { 'Authorization': KOTAK_ACCESS_TOKEN } }
+            );
+
+            if (quotesRes.ok) {
+                const quotes = await quotesRes.json();
+                const priceMap = {};
+                quotes.forEach(q => {
+                    priceMap[q.exchange_token] = {
+                        ltp: parseFloat(q.ltp),
+                        change: parseFloat(q.change || 0),
+                        perChange: parseFloat(q.per_change || 0)
+                    };
+                });
+
+                etfs = etfs.map(etf => ({
+                    ...etf,
+                    ...priceMap[etf.tradingSymbol || etf.symbol] || { ltp: 0, change: 0, perChange: 0 }
+                }));
+            }
+        } catch (e) {
+            console.warn('Could not fetch ETF prices:', e.message);
+        }
+
+        etfCache.set(cacheKey, etfs);
+        res.json(etfs);
+    } catch (error) {
+        console.error('Error in /api/kotak/etfs:', error);
+        res.status(500).json({ error: 'Failed to fetch ETFs' });
+    }
+});
+
+// Endpoint: Search ETFs
+app.get('/api/kotak/search-etf', async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q || q.length < 2) {
+            return res.json([]);
+        }
+
+        const etfs = scripMasterCache.get('etf_list') || [];
+        const query = q.toLowerCase();
+
+        const results = etfs.filter(etf =>
+            (etf.name && etf.name.toLowerCase().includes(query)) ||
+            (etf.symbol && etf.symbol.toLowerCase().includes(query))
+        ).slice(0, 10);
+
+        res.json(results);
+    } catch (error) {
+        console.error('Error in /api/kotak/search-etf:', error);
+        res.json([]);
+    }
+});
+
+// Endpoint: Kotak login with TOTP (manual trigger)
+app.post('/api/kotak/login', async (req, res) => {
+    try {
+        const { totp } = req.body;
+        if (!totp) {
+            return res.status(400).json({ error: 'TOTP required' });
+        }
+
+        const session = await loginKotak(totp);
+        if (session) {
+            res.json({
+                success: true,
+                message: 'Kotak session created',
+                expiresAt: session.expiresAt
+            });
+        } else {
+            res.status(401).json({ error: 'Login failed' });
+        }
+    } catch (error) {
+        console.error('Error in /api/kotak/login:', error);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Endpoint: Kotak session status
+app.get('/api/kotak/status', (req, res) => {
+    res.json({
+        hasSession: !!kotakSession.tradingToken,
+        isExpired: Date.now() > kotakSession.expiresAt,
+        baseUrl: kotakSession.baseUrl
+    });
+});
+
 // ============ TOP FUNDS PRE-CALCULATION ============
 
 const MFAPI_BASE = 'https://api.mfapi.in/mf';
