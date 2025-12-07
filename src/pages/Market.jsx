@@ -121,6 +121,7 @@ const Market = () => {
                 });
 
                 const uniqueFunds = Array.from(fundMap.values());
+                console.log(`✅ Loaded ${uniqueFunds.length} active Direct Growth mutual funds (filtered from ${data.length} total schemes)`);
                 setAllFunds(uniqueFunds);
 
                 // Check URL params for initial filter
