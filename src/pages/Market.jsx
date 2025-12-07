@@ -81,22 +81,42 @@ const Market = () => {
                 const fundMap = new Map();
 
                 data.forEach(fund => {
-                    const isDirectGrowth =
-                        fund.schemeName.toLowerCase().includes('direct') &&
-                        fund.schemeName.toLowerCase().includes('growth');
+                    const nameLower = fund.schemeName.toLowerCase();
 
-                    if (isDirectGrowth && !fundMap.has(fund.schemeCode)) {
-                        fundMap.set(fund.schemeCode, {
-                            id: fund.schemeCode,
-                            name: cleanFundName(fund.schemeName),
-                            fullName: fund.schemeName,
-                            category: getCategoryFromName(fund.schemeName),
-                            rating: getRandomRating(fund.schemeCode),
-                            risk: getRiskFromCategory(getCategoryFromName(fund.schemeName)),
-                            return1y: null,
-                            return3y: null,
-                            return5y: null,
-                        });
+                    // STRICT filter: Must be Direct Plan AND Growth option
+                    const isDirectPlan = nameLower.includes('direct');
+                    const isGrowthOption = nameLower.includes('growth');
+                    const isDividend = nameLower.includes('dividend') || nameLower.includes('idcw');
+                    const isRegular = nameLower.includes('regular plan');
+
+                    // Exclude closed/discontinued/merged funds
+                    const excludeKeywords = ['closed', 'merged', 'wef', 'formerly', 'segregated', 'discontinued'];
+                    const isExcluded = excludeKeywords.some(keyword => nameLower.includes(keyword));
+
+                    // Only include: Direct + Growth, NOT Dividend, NOT Excluded
+                    if (isDirectPlan && isGrowthOption && !isDividend && !isRegular && !isExcluded) {
+                        // Create normalized name for better deduplication
+                        const normalizedName = fund.schemeName
+                            .replace(/\s*-?\s*Direct\s*(Plan)?\s*-?\s*/gi, ' ')
+                            .replace(/\s*-?\s*Growth\s*(Option)?\s*-?\s*/gi, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                            .toLowerCase();
+
+                        // Use normalized name as key to avoid duplicates
+                        if (!fundMap.has(normalizedName)) {
+                            fundMap.set(normalizedName, {
+                                id: fund.schemeCode,
+                                name: cleanFundName(fund.schemeName),
+                                fullName: fund.schemeName,
+                                category: getCategoryFromName(fund.schemeName),
+                                rating: getRandomRating(fund.schemeCode),
+                                risk: getRiskFromCategory(getCategoryFromName(fund.schemeName)),
+                                return1y: null,
+                                return3y: null,
+                                return5y: null,
+                            });
+                        }
                     }
                 });
 
@@ -534,7 +554,7 @@ const Market = () => {
                             </div>
                         )}
                     </div>
-            </>
+                </>
             )}
         </div>
     );

@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Search, RefreshCw, ExternalLink, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Search, RefreshCw, BarChart3, AlertCircle } from 'lucide-react';
 import { SkeletonList } from './SkeletonLoader';
-import { PriceBadge, LiveDot } from './PriceDisplay';
+import { LiveDot } from './PriceDisplay';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
+// Popular Indian ETFs with their NSE symbols
+const POPULAR_ETFS = [
+    { symbol: 'NIFTYBEES', name: 'Nippon India ETF Nifty 50 BeES', type: 'Index ETF', aum: '34000 Cr', expense: '0.04%' },
+    { symbol: 'BANKBEES', name: 'Nippon India ETF Bank BeES', type: 'Banking ETF', aum: '8900 Cr', expense: '0.19%' },
+    { symbol: 'JUNIORBEES', name: 'Nippon India ETF Nifty Next 50 Junior BeES', type: 'Index ETF', aum: '3200 Cr', expense: '0.10%' },
+    { symbol: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', type: 'Gold ETF', aum: '7500 Cr', expense: '0.59%' },
+    { symbol: 'ITBEES', name: 'Nippon India ETF Nifty IT', type: 'Sector ETF', aum: '4100 Cr', expense: '0.22%' },
+    { symbol: 'SETFNIFTY', name: 'SBI ETF Nifty 50', type: 'Index ETF', aum: '2800 Cr', expense: '0.07%' },
+    { symbol: 'SETFNIF50', name: 'SBI Nifty 50 ETF', type: 'Index ETF', aum: '1900 Cr', expense: '0.07%' },
+    { symbol: 'CPSE', name: 'Nippon India ETF CPSE', type: 'PSU ETF', aum: '2100 Cr', expense: '0.07%' },
+    { symbol: 'PSUBNKBEES', name: 'Nippon India ETF PSU Bank BeES', type: 'Banking ETF', aum: '1800 Cr', expense: '0.19%' },
+    { symbol: 'MOM50', name: 'Motilal Oswal Nifty 50 ETF', type: 'Index ETF', aum: '1500 Cr', expense: '0.05%' },
+    { symbol: 'SILVERBEES', name: 'Nippon India Silver ETF', type: 'Silver ETF', aum: '2400 Cr', expense: '0.40%' },
+    { symbol: 'HDFCNIFTY', name: 'HDFC Nifty 50 ETF', type: 'Index ETF', aum: '1100 Cr', expense: '0.05%' },
+    { symbol: 'ICICIBANKP', name: 'ICICI Pru Bank ETF', type: 'Banking ETF', aum: '800 Cr', expense: '0.22%' },
+    { symbol: 'KOTAKNIFTY', name: 'Kotak Nifty 50 ETF', type: 'Index ETF', aum: '700 Cr', expense: '0.12%' },
+    { symbol: 'PHARMABEES', name: 'Nippon India ETF Nifty Pharma', type: 'Sector ETF', aum: '600 Cr', expense: '0.22%' },
+];
 
 const ETFTracker = ({ compact = false }) => {
     const [etfs, setEtfs] = useState([]);
@@ -11,27 +30,46 @@ const ETFTracker = ({ compact = false }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [lastUpdate, setLastUpdate] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [sortBy, setSortBy] = useState('name'); // name, change
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortBy, setSortBy] = useState('name');
+    const [error, setError] = useState(null);
 
-    const fetchETFs = async () => {
+    const fetchETFPrices = async () => {
         try {
             setRefreshing(true);
-            const response = await fetch(`${BACKEND_URL}/api/kotak/etfs`);
+            setError(null);
+
+            // Try fetching from backend first
+            const response = await fetch(`${BACKEND_URL}/api/etf-prices`);
+
             if (response.ok) {
                 const data = await response.json();
-                setEtfs(data);
-                setLastUpdate(new Date().toLocaleTimeString());
+                if (data && data.length > 0) {
+                    setEtfs(data);
+                    setLastUpdate(new Date().toLocaleTimeString());
+                    return;
+                }
             }
-        } catch (error) {
-            console.error('Error fetching ETFs:', error);
-            setEtfs([
-                { symbol: 'NIFTYBEES', name: 'Nippon India ETF Nifty 50 BeES', type: 'Index ETF', ltp: 265.50, change: 1.2, perChange: 0.45 },
-                { symbol: 'BANKBEES', name: 'Nippon India ETF Bank BeES', type: 'Index ETF', ltp: 485.30, change: -2.1, perChange: -0.43 },
-                { symbol: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', type: 'Gold ETF', ltp: 58.20, change: 0.3, perChange: 0.52 },
-                { symbol: 'SETFNIFTY', name: 'SBI ETF Nifty 50', type: 'Index ETF', ltp: 263.80, change: 1.1, perChange: 0.42 },
-                { symbol: 'ITBEES', name: 'Nippon India ETF Nifty IT', type: 'Sector ETF', ltp: 42.15, change: -0.5, perChange: -1.17 }
-            ]);
+
+            // If backend fails, use static ETF list
+            // Real prices would need a broker API or subscription service
+            setEtfs(POPULAR_ETFS.map(etf => ({
+                ...etf,
+                ltp: null, // No simulated prices
+                change: null,
+                perChange: null,
+                priceUnavailable: true
+            })));
+            setLastUpdate(new Date().toLocaleTimeString());
+            setError('Live prices require market data subscription. Showing ETF information only.');
+
+        } catch (err) {
+            console.error('Error fetching ETF prices:', err);
+            setError('Could not load ETF data');
+            setEtfs(POPULAR_ETFS.map(etf => ({
+                ...etf,
+                ltp: null,
+                priceUnavailable: true
+            })));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -39,9 +77,7 @@ const ETFTracker = ({ compact = false }) => {
     };
 
     useEffect(() => {
-        fetchETFs();
-        const interval = setInterval(fetchETFs, 5 * 60 * 1000);
-        return () => clearInterval(interval);
+        fetchETFPrices();
     }, []);
 
     const formatPrice = (price) => {
@@ -53,6 +89,7 @@ const ETFTracker = ({ compact = false }) => {
     };
 
     const getChangeClass = (change) => {
+        if (change === null || change === undefined) return 'text-muted';
         const val = parseFloat(change);
         if (val > 0) return 'text-success';
         if (val < 0) return 'text-danger';
@@ -62,20 +99,21 @@ const ETFTracker = ({ compact = false }) => {
     const filteredETFs = etfs.filter(etf =>
         !searchQuery ||
         etf.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        etf.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
+        etf.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        etf.type?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Sort ETFs
     const sortedETFs = [...filteredETFs].sort((a, b) => {
-        let comparison = 0;
         if (sortBy === 'name') {
-            comparison = (a.name || a.symbol).localeCompare(b.name || b.symbol);
-        } else if (sortBy === 'change') {
-            comparison = parseFloat(a.perChange || 0) - parseFloat(b.perChange || 0);
-        } else if (sortBy === 'price') {
-            comparison = parseFloat(a.ltp || 0) - parseFloat(b.ltp || 0);
+            return (a.name || a.symbol).localeCompare(b.name || b.symbol);
+        } else if (sortBy === 'type') {
+            return (a.type || '').localeCompare(b.type || '');
+        } else if (sortBy === 'aum') {
+            const aumA = parseFloat(a.aum?.replace(/[^\d.]/g, '') || 0);
+            const aumB = parseFloat(b.aum?.replace(/[^\d.]/g, '') || 0);
+            return aumB - aumA;
         }
-        return sortOrder === 'asc' ? comparison : -comparison;
+        return 0;
     });
 
     const displayETFs = compact ? sortedETFs.slice(0, 6) : sortedETFs;
@@ -108,7 +146,7 @@ const ETFTracker = ({ compact = false }) => {
                     </div>
                 </div>
                 <button
-                    onClick={fetchETFs}
+                    onClick={fetchETFPrices}
                     disabled={refreshing}
                     className="p-2 hover:bg-surface rounded-xl transition-all hover:scale-105 disabled:opacity-50"
                     title="Refresh"
@@ -117,6 +155,14 @@ const ETFTracker = ({ compact = false }) => {
                 </button>
             </div>
 
+            {/* Error/Info Banner */}
+            {error && (
+                <div className="flex items-center gap-2 p-3 mb-4 bg-warning/10 border border-warning/20 rounded-xl">
+                    <AlertCircle size={16} className="text-warning flex-shrink-0" />
+                    <p className="text-xs text-warning">{error}</p>
+                </div>
+            )}
+
             {/* Search and Sort (only in full view) */}
             {!compact && (
                 <div className="flex gap-3 mb-4">
@@ -124,7 +170,7 @@ const ETFTracker = ({ compact = false }) => {
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                         <input
                             type="text"
-                            placeholder="Search ETFs..."
+                            placeholder="Search ETFs by name, symbol or type..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 bg-surface rounded-xl border border-border text-sm text-white placeholder-muted focus:border-primary focus:outline-none transition-colors"
@@ -136,8 +182,8 @@ const ETFTracker = ({ compact = false }) => {
                         className="px-3 py-2 bg-surface rounded-xl border border-border text-sm text-white focus:border-primary focus:outline-none"
                     >
                         <option value="name">Sort by Name</option>
-                        <option value="change">Sort by Change</option>
-                        <option value="price">Sort by Price</option>
+                        <option value="type">Sort by Type</option>
+                        <option value="aum">Sort by AUM</option>
                     </select>
                 </div>
             )}
@@ -151,42 +197,56 @@ const ETFTracker = ({ compact = false }) => {
                 ) : (
                     displayETFs.map((etf, index) => (
                         <div
-                            key={index}
+                            key={etf.symbol}
                             className="flex items-center justify-between p-3 rounded-xl bg-surface/50 hover:bg-surface transition-all duration-200 border border-transparent hover:border-border group animate-fade-in opacity-0"
                             style={{ animationDelay: `${index * 0.05}s` }}
                         >
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-sm font-semibold text-white group-hover:text-primary transition-colors">
-                                        {etf.tradingSymbol || etf.symbol}
+                                        {etf.symbol}
                                     </span>
-                                    {etf.type && (
-                                        <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
-                                            {etf.type}
-                                        </span>
-                                    )}
+                                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
+                                        {etf.type}
+                                    </span>
                                 </div>
                                 <p className="text-xs text-muted truncate mt-0.5">
                                     {etf.name}
                                 </p>
+                                {!compact && (
+                                    <div className="flex gap-3 mt-1 text-xs text-muted">
+                                        <span>AUM: ₹{etf.aum}</span>
+                                        <span>Expense: {etf.expense}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="text-right ml-4 flex items-center gap-3">
-                                <div>
-                                    <div className="text-sm font-semibold text-white">
-                                        ₹{formatPrice(etf.ltp)}
+                                {etf.priceUnavailable ? (
+                                    <div className="text-sm text-muted">
+                                        ---
                                     </div>
-                                    <div className={`text-xs font-medium ${getChangeClass(etf.perChange)}`}>
-                                        {parseFloat(etf.perChange || 0) >= 0 ? '+' : ''}
-                                        {parseFloat(etf.perChange || 0).toFixed(2)}%
-                                    </div>
-                                </div>
-
-                                {parseFloat(etf.perChange || 0) >= 0 ? (
-                                    <TrendingUp size={16} className="text-success" />
                                 ) : (
-                                    <TrendingDown size={16} className="text-danger" />
+                                    <div>
+                                        <div className="text-sm font-semibold text-white">
+                                            ₹{formatPrice(etf.ltp)}
+                                        </div>
+                                        <div className={`text-xs font-medium ${getChangeClass(etf.perChange)}`}>
+                                            {etf.perChange !== null ? (
+                                                <>
+                                                    {parseFloat(etf.perChange) >= 0 ? '+' : ''}
+                                                    {parseFloat(etf.perChange).toFixed(2)}%
+                                                </>
+                                            ) : '---'}
+                                        </div>
+                                    </div>
                                 )}
+
+                                {etf.perChange !== null && parseFloat(etf.perChange) >= 0 ? (
+                                    <TrendingUp size={16} className="text-success" />
+                                ) : etf.perChange !== null ? (
+                                    <TrendingDown size={16} className="text-danger" />
+                                ) : null}
                             </div>
                         </div>
                     ))
@@ -200,8 +260,7 @@ const ETFTracker = ({ compact = false }) => {
                         href="/market?tab=etf"
                         className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-light transition-colors font-medium"
                     >
-                        View All {etfs.length} ETFs
-                        <ExternalLink size={14} />
+                        View All {etfs.length} ETFs →
                     </a>
                 </div>
             )}
@@ -209,8 +268,8 @@ const ETFTracker = ({ compact = false }) => {
             {/* Info Banner */}
             <div className="mt-4 p-3 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10">
                 <p className="text-xs text-muted">
-                    <span className="text-primary font-semibold">ETFs</span> are Exchange Traded Funds that track indices like Nifty 50 or sectors.
-                    They trade like stocks with real-time prices from Kotak Neo API.
+                    <span className="text-primary font-semibold">ETFs</span> (Exchange Traded Funds) track indices or sectors.
+                    Trade on NSE/BSE like stocks. AUM indicates fund size.
                 </p>
             </div>
         </div>
