@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, PieChart, TrendingUp, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -9,7 +9,8 @@ const Sidebar = () => {
 
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: TrendingUp, label: 'Market', path: '/market' },
+        { icon: TrendingUp, label: 'Mutual Funds', path: '/market?tab=mf' },
+        { icon: BarChart3, label: 'ETF', path: '/market?tab=etf' },
         { icon: PieChart, label: 'Portfolio', path: '/portfolio' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];

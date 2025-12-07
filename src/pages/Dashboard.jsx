@@ -1,11 +1,10 @@
-// Dashboard component - v3 with Live Market Data
+// Dashboard component - v4 with Live Market Data
 import React, { useEffect, useState } from 'react';
 import { getTopMutualFunds } from '../services/api';
 import { TrendingUp, Star, Building2, Gem, BarChart3, PiggyBank, ChevronRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import MarketIndices from '../components/MarketIndices';
-import ETFTracker from '../components/ETFTracker';
 
 // Collection category icons
 const CollectionIcon = ({ type }) => {
@@ -81,7 +80,7 @@ const Dashboard = () => {
     useEffect(() => {
         const loadFunds = async () => {
             setLoading(true);
-            const initialList = await getTopMutualFunds(20);
+            const initialList = await getTopMutualFunds(10);
             setFunds(initialList);
             setLoading(false);
         };
@@ -135,13 +134,12 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* ETF Tracker Section */}
-            <ETFTracker compact />
+
 
             {/* Top Performing Table */}
             <div className="bg-surface border border-border rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-border flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white">Top 20 Performing Funds</h2>
+                    <h2 className="text-xl font-bold text-white">Top Performing Mutual Funds</h2>
                     <Link to="/market" className="text-primary text-sm font-medium hover:underline">View All</Link>
                 </div>
                 <div className="overflow-x-auto">
