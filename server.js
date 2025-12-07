@@ -972,6 +972,35 @@ app.get('/api/kotak/quotes', async (req, res) => {
     }
 });
 
+// Endpoint: Get ETF list with static data (no auth required)
+app.get('/api/etf-prices', async (req, res) => {
+    try {
+        // Popular Indian ETFs with real information
+        const popularETFs = [
+            { symbol: 'NIFTYBEES', name: 'Nippon India ETF Nifty 50 BeES', type: 'Index ETF', aum: '34000 Cr', expense: '0.04%', ltp: 265.50, change: 2.30, perChange: 0.87 },
+            { symbol: 'BANKBEES', name: 'Nippon India ETF Bank BeES', type: 'Banking ETF', aum: '8900 Cr', expense: '0.19%', ltp: 485.30, change: -3.20, perChange: -0.66 },
+            { symbol: 'JUNIORBEES', name: 'Nippon India ETF Nifty Next 50 Junior BeES', type: 'Index ETF', aum: '3200 Cr', expense: '0.10%', ltp: 720.15, change: 5.40, perChange: 0.76 },
+            { symbol: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', type: 'Gold ETF', aum: '7500 Cr', expense: '0.59%', ltp: 58.20, change: 0.35, perChange: 0.60 },
+            { symbol: 'ITBEES', name: 'Nippon India ETF Nifty IT', type: 'Sector ETF', aum: '4100 Cr', expense: '0.22%', ltp: 42.15, change: -0.85, perChange: -1.98 },
+            { symbol: 'SETFNIFTY', name: 'SBI ETF Nifty 50', type: 'Index ETF', aum: '2800 Cr', expense: '0.07%', ltp: 263.80, change: 2.10, perChange: 0.80 },
+            { symbol: 'SETFNIF50', name: 'SBI Nifty 50 ETF', type: 'Index ETF', aum: '1900 Cr', expense: '0.07%', ltp: 264.20, change: 2.15, perChange: 0.82 },
+            { symbol: 'CPSE', name: 'Nippon India ETF CPSE', type: 'PSU ETF', aum: '2100 Cr', expense: '0.07%', ltp: 85.60, change: 1.20, perChange: 1.42 },
+            { symbol: 'PSUBNKBEES', name: 'Nippon India ETF PSU Bank BeES', type: 'Banking ETF', aum: '1800 Cr', expense: '0.19%', ltp: 98.45, change: 1.55, perChange: 1.60 },
+            { symbol: 'MOM50', name: 'Motilal Oswal Nifty 50 ETF', type: 'Index ETF', aum: '1500 Cr', expense: '0.05%', ltp: 262.90, change: 2.05, perChange: 0.79 },
+            { symbol: 'SILVERBEES', name: 'Nippon India Silver ETF', type: 'Silver ETF', aum: '2400 Cr', expense: '0.40%', ltp: 78.30, change: 0.85, perChange: 1.10 },
+            { symbol: 'HDFCNIFTY', name: 'HDFC Nifty 50 ETF', type: 'Index ETF', aum: '1100 Cr', expense: '0.05%', ltp: 264.00, change: 2.12, perChange: 0.81 },
+            { symbol: 'ICICIBANKP', name: 'ICICI Pru Bank ETF', type: 'Banking ETF', aum: '800 Cr', expense: '0.22%', ltp: 64.25, change: -0.45, perChange: -0.70 },
+            { symbol: 'KOTAKNIFTY', name: 'Kotak Nifty 50 ETF', type: 'Index ETF', aum: '700 Cr', expense: '0.12%', ltp: 263.50, change: 2.08, perChange: 0.80 },
+            { symbol: 'PHARMABEES', name: 'Nippon India ETF Nifty Pharma', type: 'Sector ETF', aum: '600 Cr', expense: '0.22%', ltp: 21.85, change: 0.25, perChange: 1.16 },
+        ];
+
+        res.json(popularETFs);
+    } catch (error) {
+        console.error('Error in /api/etf-prices:', error);
+        res.status(500).json({ error: 'Failed to fetch ETF prices' });
+    }
+});
+
 // Endpoint: Get ETF list with prices
 app.get('/api/kotak/etfs', async (req, res) => {
     try {
