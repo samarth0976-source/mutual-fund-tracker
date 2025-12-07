@@ -89,8 +89,17 @@ const Market = () => {
                     const isDividend = nameLower.includes('dividend') || nameLower.includes('idcw');
                     const isRegular = nameLower.includes('regular plan');
 
-                    // Exclude closed/discontinued/merged funds
-                    const excludeKeywords = ['closed', 'merged', 'wef', 'formerly', 'segregated', 'discontinued'];
+                    // Exclude closed/discontinued/merged funds AND debt/FMP/liquid funds
+                    const excludeKeywords = [
+                        // Closed/discontinued
+                        'closed', 'merged', 'wef', 'formerly', 'segregated', 'discontinued', 'matured', 'liquidated',
+                        // Debt fund categories (user wants equity/hybrid only)
+                        'fmp', 'fixed maturity', 'interval fund', 'overnight', 'liquid fund',
+                        'money market', 'ultra short', 'low duration', 'short duration',
+                        'medium duration', 'long duration', 'floater', 'gilt', 'dynamic bond',
+                        'credit risk', 'banking psg', 'corporate bond', 'constant maturity',
+                        'target maturity', 'capital protection'
+                    ];
                     const isExcluded = excludeKeywords.some(keyword => nameLower.includes(keyword));
 
                     // Only include: Direct + Growth, NOT Dividend, NOT Excluded
