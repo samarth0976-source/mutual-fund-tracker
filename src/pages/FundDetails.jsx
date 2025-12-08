@@ -220,10 +220,12 @@ const FundDetails = () => {
                             <div>
                                 <h3 className="text-xl font-bold text-white">Holdings</h3>
                                 <p className="text-xs text-muted mt-1">
-                                    {fund.isRealData ? (
-                                        <span className="text-primary flex items-center gap-1">✅ Real-Time Data from Groww</span>
+                                    {fund.isRealData && fund.holdings.length > 0 ? (
+                                        <span className="text-primary flex items-center gap-1">✅ Live Data from Groww</span>
+                                    ) : fund.holdings.length > 0 ? (
+                                        <span className="text-yellow-500 flex items-center gap-1">⚠️ Holdings data may not be current</span>
                                     ) : (
-                                        <span className="text-yellow-500 flex items-center gap-1">⚠️ Simulated Data</span>
+                                        <span className="text-gray-400 flex items-center gap-1">📊 Holdings data not available for this fund</span>
                                     )}
                                 </p>
                             </div>
@@ -235,55 +237,68 @@ const FundDetails = () => {
                                 >
                                     {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Data'}
                                 </button>
-                                <div className="text-xs text-muted text-right">{fund.holdings.length} Companies</div>
+                                {fund.holdings.length > 0 && (
+                                    <div className="text-xs text-muted text-right">{fund.holdings.length} Companies</div>
+                                )}
                             </div>
                         </div>
-                        <table className="w-full text-left">
-                            <thead className="bg-white/5 text-muted text-sm">
-                                <tr>
-                                    <th className="px-6 py-4 font-medium">Stock Name</th>
-                                    <th className="px-6 py-4 font-medium">Sector</th>
-                                    <th className="px-6 py-4 font-medium text-right">Allocation</th>
-                                    <th className="px-6 py-4 font-medium text-right">1M Return</th>
-                                    <th className="px-6 py-4 font-medium text-right">1Y Return</th>
-                                    <th className="px-6 py-4 font-medium text-right">3Y Return</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {fund.holdings.map((holding, i) => (
-                                    <tr key={i} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-white">
-                                            <Link to={`/stock/${encodeURIComponent(holding.name)}`} className="hover:text-primary hover:underline transition-colors">
-                                                {holding.name}
-                                            </Link>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted">{holding.sector}</td>
-                                        <td className="px-6 py-4 text-right font-mono text-white">{holding.allocation}%</td>
-                                        <td className="px-6 py-4 text-right font-mono">
-                                            {holding.return1m ? (
-                                                <span className={parseFloat(holding.return1m) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                    {parseFloat(holding.return1m) >= 0 ? '+' : ''}{holding.return1m}%
-                                                </span>
-                                            ) : '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-mono">
-                                            {holding.return1y ? (
-                                                <span className={parseFloat(holding.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                    {parseFloat(holding.return1y) >= 0 ? '+' : ''}{holding.return1y}%
-                                                </span>
-                                            ) : '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-mono">
-                                            {holding.return3y ? (
-                                                <span className={parseFloat(holding.return3y) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                    {parseFloat(holding.return3y) >= 0 ? '+' : ''}{holding.return3y}%
-                                                </span>
-                                            ) : '—'}
-                                        </td>
+                        {fund.holdings.length > 0 ? (
+                            <table className="w-full text-left">
+                                <thead className="bg-white/5 text-muted text-sm">
+                                    <tr>
+                                        <th className="px-6 py-4 font-medium">Stock Name</th>
+                                        <th className="px-6 py-4 font-medium">Sector</th>
+                                        <th className="px-6 py-4 font-medium text-right">Allocation</th>
+                                        <th className="px-6 py-4 font-medium text-right">1M Return</th>
+                                        <th className="px-6 py-4 font-medium text-right">1Y Return</th>
+                                        <th className="px-6 py-4 font-medium text-right">3Y Return</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {fund.holdings.map((holding, i) => (
+                                        <tr key={i} className="hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 font-medium text-white">
+                                                <Link to={`/stock/${encodeURIComponent(holding.name)}`} className="hover:text-primary hover:underline transition-colors">
+                                                    {holding.name}
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-4 text-muted">{holding.sector}</td>
+                                            <td className="px-6 py-4 text-right font-mono text-white">{holding.allocation}%</td>
+                                            <td className="px-6 py-4 text-right font-mono">
+                                                {holding.return1m ? (
+                                                    <span className={parseFloat(holding.return1m) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                        {parseFloat(holding.return1m) >= 0 ? '+' : ''}{holding.return1m}%
+                                                    </span>
+                                                ) : '—'}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-mono">
+                                                {holding.return1y ? (
+                                                    <span className={parseFloat(holding.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                        {parseFloat(holding.return1y) >= 0 ? '+' : ''}{holding.return1y}%
+                                                    </span>
+                                                ) : '—'}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-mono">
+                                                {holding.return3y ? (
+                                                    <span className={parseFloat(holding.return3y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                        {parseFloat(holding.return3y) >= 0 ? '+' : ''}{holding.return3y}%
+                                                    </span>
+                                                ) : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div className="p-12 text-center">
+                                <div className="text-gray-500 text-4xl mb-4">📋</div>
+                                <h4 className="text-white font-semibold text-lg mb-2">Holdings Data Unavailable</h4>
+                                <p className="text-muted text-sm max-w-md mx-auto">
+                                    Detailed holdings information is not currently available for this fund.
+                                    This may be due to data source limitations. Try refreshing or check back later.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
