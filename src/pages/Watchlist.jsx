@@ -18,27 +18,43 @@ const Watchlist = () => {
     const [newName, setNewName] = useState('');
     const [creating, setCreating] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchWatchlists();
     }, []);
 
+    // Auto-clear error after 5 seconds
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const fetchWatchlists = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('Fetching watchlists with token:', token ? 'present' : 'missing');
             const response = await fetch(`${BACKEND_URL}/api/watchlist`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            console.log('Fetch response status:', response.status);
+            const data = await response.json();
+            console.log('Fetch response data:', data);
+
             if (response.ok) {
-                const data = await response.json();
                 setWatchlists(data.watchlists || []);
                 // Expand all by default
                 const expanded = {};
                 data.watchlists?.forEach(w => { expanded[w._id] = true; });
                 setExpandedLists(expanded);
+            } else {
+                setError(data.error || 'Failed to load watchlists');
             }
-        } catch (error) {
-            console.error('Failed to fetch watchlists:', error);
+        } catch (err) {
+            console.error('Failed to fetch watchlists:', err);
+            setError('Network error: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -47,9 +63,12 @@ const Watchlist = () => {
     const createWatchlist = async () => {
         if (!newName.trim()) return;
         setCreating(true);
+        setError(null);
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${BACKEND_URL}/api/watchlist`, {
+            console.log('Creating watchlist with token:', token ? 'present' : 'missing');
+
+            const response = await fetch(`${BACKEND_URL}/api/watchlist`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -57,11 +76,22 @@ const Watchlist = () => {
                 },
                 body: JSON.stringify({ name: newName.trim() })
             });
-            setNewName('');
-            setShowCreateModal(false);
-            fetchWatchlists();
-        } catch (error) {
-            console.error('Failed to create watchlist:', error);
+
+            console.log('Create response status:', response.status);
+            const data = await response.json();
+            console.log('Create response data:', data);
+
+            if (response.ok) {
+                setNewName('');
+                setShowCreateModal(false);
+                fetchWatchlists();
+            } else {
+                // Show the actual error from the API
+                setError(data.error || `Failed to create watchlist (${response.status})`);
+            }
+        } catch (err) {
+            console.error('Failed to create watchlist:', err);
+            setError('Network error: ' + err.message);
         } finally {
             setCreating(false);
         }
@@ -160,6 +190,13 @@ const Watchlist = () => {
 
     return (
         <div className="min-h-screen ml-64 p-8 bg-background">
+            {/* Error Toast */}
+            {error && (
+                <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg bg-red-500 shadow-lg animate-fade-in">
+                    <span className="text-white font-medium">{error}</span>
+                </div>
+            )}
+
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">

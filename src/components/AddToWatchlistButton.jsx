@@ -91,6 +91,8 @@ const AddToWatchlistButton = ({ type, itemId, name }) => {
         setCreating(true);
         try {
             const token = localStorage.getItem('token');
+            console.log('Creating watchlist with token:', token ? 'present' : 'missing');
+
             const response = await fetch(`${BACKEND_URL}/api/watchlist`, {
                 method: 'POST',
                 headers: {
@@ -100,15 +102,22 @@ const AddToWatchlistButton = ({ type, itemId, name }) => {
                 body: JSON.stringify({ name: newWatchlistName.trim() })
             });
 
+            console.log('Create response status:', response.status);
+            const data = await response.json();
+            console.log('Create response data:', data);
+
             if (response.ok) {
                 setNewWatchlistName('');
                 setShowCreateModal(false);
                 fetchWatchlists();
                 showToast(`Created "${newWatchlistName.trim()}"`);
+            } else {
+                // Show the actual error from the API
+                showToast(data.error || `Failed to create (${response.status})`, true);
             }
         } catch (error) {
             console.error('Failed to create watchlist:', error);
-            showToast('Failed to create watchlist', true);
+            showToast('Network error: ' + error.message, true);
         } finally {
             setCreating(false);
         }
@@ -163,8 +172,8 @@ const AddToWatchlistButton = ({ type, itemId, name }) => {
                                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors"
                                         >
                                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isInWatchlist(watchlist)
-                                                    ? 'bg-primary border-primary'
-                                                    : 'border-muted'
+                                                ? 'bg-primary border-primary'
+                                                : 'border-muted'
                                                 }`}>
                                                 {isInWatchlist(watchlist) && <Check className="w-3 h-3 text-black" />}
                                             </div>
