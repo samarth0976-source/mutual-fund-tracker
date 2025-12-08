@@ -972,119 +972,74 @@ app.get('/api/kotak/indices', async (req, res) => {
             const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
             const url = `${baseUrl}/script-details/1.0/quotes/neosymbol/nse_cm|Nifty 50,nse_cm|Nifty Bank,nse_cm|NIFTY IT,nse_cm|NIFTY MID 50,nse_cm|NIFTY FIN SERVICE,bse_cm|SENSEX/all`;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
             const response = await fetch(url, {
                 headers: { 'Authorization': KOTAK_ACCESS_TOKEN },
-                timeout: 5000
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.length > 0) {
+                if (data && Array.isArray(data) && data.length > 0) {
                     const formattedData = data.map(item => ({
-                        symbol: item.exchange_token,
-                        displayName: item.display_symbol,
+                        symbol: item.exchange_token || item.display_symbol,
+                        displayName: item.display_symbol || item.exchange_token,
                         exchange: item.exchange,
-                        ltp: parseFloat(item.ltp),
-                        change: parseFloat(item.change),
-                        perChange: parseFloat(item.per_change),
-                        open: parseFloat(item.ohlc?.open || 0),
-                        high: parseFloat(item.ohlc?.high || 0),
-                        low: parseFloat(item.ohlc?.low || 0),
-                        close: parseFloat(item.ohlc?.close || 0),
-                        lastUpdate: item.lstup_time
+                        ltp: parseFloat(item.ltp) || 0,
+                        change: parseFloat(item.change) || 0,
+                        perChange: parseFloat(item.per_change) || 0,
+                        isError: false
                     }));
-                    etfCache.set(cacheKey, formattedData, 60); // Cache for 1 minute
-                    return res.json(formattedData);
+
+                    // Ensure we have all 6 indices
+                    const indexNames = ['NIFTY 50', 'BANK NIFTY', 'NIFTY IT', 'NIFTY MIDCAP 50', 'NIFTY FIN SERVICES', 'SENSEX'];
+                    const missingIndices = indexNames.filter(name =>
+                        !formattedData.some(d => d.displayName?.toUpperCase().includes(name.split(' ')[0]))
+                    );
+
+                    missingIndices.forEach(name => {
+                        formattedData.push({
+                            symbol: name,
+                            displayName: name,
+                            ltp: 0,
+                            change: 0,
+                            perChange: 0,
+                            isError: true
+                        });
+                    });
+
+                    etfCache.set(cacheKey, formattedData.slice(0, 6), 60);
+                    return res.json(formattedData.slice(0, 6));
                 }
             }
         } catch (kotakError) {
-            console.log('Kotak API unavailable, using TradingView fallback');
+            console.log('Kotak API unavailable:', kotakError.message);
         }
 
-        // Fallback to TradingView for indices data
-        console.log('🔄 Fetching indices from TradingView...');
-        const tvIndices = [
-            { symbol: 'NSE:NIFTY', displayName: 'NIFTY 50' },
-            { symbol: 'NSE:BANKNIFTY', displayName: 'BANK NIFTY' },
-            { symbol: 'NSE:NIFTYIT', displayName: 'NIFTY IT' },
-            { symbol: 'NSE:NIFTYMIDCAP50', displayName: 'NIFTY MIDCAP 50' },
-            { symbol: 'NSE:NIFTY_FIN_SERVICE', displayName: 'NIFTY FIN SERVICES' },
-            { symbol: 'BSE:SENSEX', displayName: 'SENSEX' }
+        // Fallback: Return placeholder data for all 6 indices
+        // This ensures the UI always shows the 6 index cards
+        console.log('📊 Using placeholder data for indices');
+        const placeholderData = [
+            { symbol: 'NIFTY50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'BANKNIFTY', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYIT', displayName: 'NIFTY IT', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYMIDCAP50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYFINSERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'SENSEX', displayName: 'SENSEX', ltp: 0, change: 0, perChange: 0, isError: true }
         ];
 
-        const indicesData = await Promise.all(tvIndices.map(async (idx) => {
-            try {
-                const client = new TradingView.Client();
-                return new Promise((resolve) => {
-                    const timeout = setTimeout(() => {
-                        client.end();
-                        resolve({
-                            symbol: idx.symbol,
-                            displayName: idx.displayName,
-                            ltp: 0,
-                            change: 0,
-                            perChange: 0,
-                            isError: true
-                        });
-                    }, 8000);
-
-                    client.onError(() => {
-                        clearTimeout(timeout);
-                        client.end();
-                        resolve({
-                            symbol: idx.symbol,
-                            displayName: idx.displayName,
-                            ltp: 0,
-                            change: 0,
-                            perChange: 0,
-                            isError: true
-                        });
-                    });
-
-                    const market = new client.Session.Market();
-                    market.setMarket(idx.symbol);
-                    market.onData((data) => {
-                        clearTimeout(timeout);
-                        client.end();
-                        resolve({
-                            symbol: idx.symbol,
-                            displayName: idx.displayName,
-                            ltp: data.lp || 0,
-                            change: data.ch || 0,
-                            perChange: data.chp || 0,
-                            isError: false
-                        });
-                    });
-                });
-            } catch (tvError) {
-                console.error(`TradingView error for ${idx.symbol}:`, tvError.message);
-                return {
-                    symbol: idx.symbol,
-                    displayName: idx.displayName,
-                    ltp: 0,
-                    change: 0,
-                    perChange: 0,
-                    isError: true
-                };
-            }
-        }));
-
-        // Filter out complete failures and cache
-        const validData = indicesData.filter(d => d.ltp > 0 || !d.isError);
-        if (validData.length > 0) {
-            etfCache.set(cacheKey, validData, 60);
-            console.log(`✅ Fetched ${validData.length} indices from TradingView`);
-        }
-
-        res.json(indicesData);
+        res.json(placeholderData);
     } catch (error) {
         console.error('Error in /api/kotak/indices:', error);
         res.json([
-            { symbol: 'Nifty 50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
-            { symbol: 'Nifty Bank', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true },
-            { symbol: 'NIFTY IT', displayName: 'NIFTY IT', ltp: 0, change: 0, perChange: 0, isError: true },
-            { symbol: 'NIFTY MIDCAP 50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true },
-            { symbol: 'NIFTY FIN SERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTY50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'BANKNIFTY', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYIT', displayName: 'NIFTY IT', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYMIDCAP50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true },
+            { symbol: 'NIFTYFINSERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true },
             { symbol: 'SENSEX', displayName: 'SENSEX', ltp: 0, change: 0, perChange: 0, isError: true }
         ]);
     }

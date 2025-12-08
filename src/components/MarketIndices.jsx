@@ -17,31 +17,21 @@ const MarketIndices = () => {
             const response = await fetch(`${BACKEND_URL}/api/kotak/indices`);
             if (response.ok) {
                 const data = await response.json();
-                // Ensure we have Mid Cap and Financial Nifty even if API doesn't return them
-                const hasNiftyMid = data.some(d => d.displayName?.includes('MID') || d.symbol?.includes('MID'));
-                const hasNiftyFin = data.some(d => d.displayName?.includes('FIN') || d.symbol?.includes('FIN'));
-
-                let finalData = data;
-                if (!hasNiftyMid) {
-                    finalData.push({ symbol: 'NIFTY MID 50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true });
-                }
-                if (!hasNiftyFin) {
-                    finalData.push({ symbol: 'NIFTY FIN SERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true });
-                }
-
-                setIndices(finalData.slice(0, 6)); // Show max 6 indices
+                // Server now always returns 6 indices (with isError flag if data unavailable)
+                setIndices(data);
                 setLastUpdate(new Date().toLocaleTimeString());
             } else {
                 throw new Error('API response not ok');
             }
         } catch (error) {
             console.error('Error fetching indices:', error);
+            // Fallback to 6 placeholder indices
             setIndices([
-                { symbol: 'Nifty 50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
-                { symbol: 'Nifty Bank', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true },
-                { symbol: 'NIFTY IT', displayName: 'NIFTY IT', ltp: 0, change: 0, perChange: 0, isError: true },
-                { symbol: 'NIFTY MID 50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true },
-                { symbol: 'NIFTY FIN SERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true },
+                { symbol: 'NIFTY50', displayName: 'NIFTY 50', ltp: 0, change: 0, perChange: 0, isError: true },
+                { symbol: 'BANKNIFTY', displayName: 'BANK NIFTY', ltp: 0, change: 0, perChange: 0, isError: true },
+                { symbol: 'NIFTYIT', displayName: 'NIFTY IT', ltp: 0, change: 0, perChange: 0, isError: true },
+                { symbol: 'NIFTYMIDCAP50', displayName: 'NIFTY MIDCAP 50', ltp: 0, change: 0, perChange: 0, isError: true },
+                { symbol: 'NIFTYFINSERVICE', displayName: 'NIFTY FIN SERVICES', ltp: 0, change: 0, perChange: 0, isError: true },
                 { symbol: 'SENSEX', displayName: 'SENSEX', ltp: 0, change: 0, perChange: 0, isError: true }
             ]);
         } finally {

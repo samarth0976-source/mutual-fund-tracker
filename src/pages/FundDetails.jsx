@@ -133,20 +133,9 @@ const FundDetails = () => {
 
     // Calculate chart data based on selected period
     const chartData = useMemo(() => {
-        if (!fund || !fund.history) return [];
+        if (!fund || !fund.history || fund.history.length === 0) return [];
 
-        // Helper to parse MFAPI date (DD-MM-YYYY format)
-        const parseMfapiDate = (dateStr) => {
-            if (!dateStr) return new Date(0);
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                // DD-MM-YYYY format
-                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            }
-            return new Date(dateStr);
-        };
-
-        const history = [...fund.history].reverse();
+        const history = [...fund.history]; // Already in chronological order from api.js
         const now = new Date();
         let cutoffDate = new Date();
 
@@ -159,8 +148,12 @@ const FundDetails = () => {
             default: cutoffDate = new Date(0);
         }
 
-        const data = history.filter(item => parseMfapiDate(item.date) >= cutoffDate).map(item => {
-            const dateObj = parseMfapiDate(item.date);
+        // api.js provides dates in YYYY-MM-DD format which Date() handles correctly
+        const data = history.filter(item => {
+            const itemDate = new Date(item.date);
+            return !isNaN(itemDate.getTime()) && itemDate >= cutoffDate;
+        }).map(item => {
+            const dateObj = new Date(item.date);
             const day = String(dateObj.getDate()).padStart(2, '0');
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const year = dateObj.getFullYear();

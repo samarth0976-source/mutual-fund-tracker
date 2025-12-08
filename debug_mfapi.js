@@ -1,23 +1,13 @@
-import axios from 'axios';
+// Debug: Check what MFAPI fund details look like
+async function testMfapiDetails() {
+    const response = await fetch('https://api.mfapi.in/mf/119598');
+    const data = await response.json();
 
-async function testMFAPI() {
-    const schemeCode = "120828"; // Quant Small Cap Fund Direct Growth
-    const url = `https://api.mfapi.in/mf/${schemeCode}`;
-
-    console.log(`Testing URL: ${url}`);
-    try {
-        const response = await axios.get(url);
-        console.log("Status:", response.status);
-        if (response.data) {
-            console.log("Keys:", Object.keys(response.data));
-            console.log("Meta:", JSON.stringify(response.data.meta, null, 2));
-            if (response.data.data) {
-                console.log(`Data length: ${response.data.data.length}`);
-            }
-        }
-    } catch (e) {
-        console.log("Failed:", e.message);
-    }
+    console.log('Meta:', data.meta);
+    console.log('\nFirst 3 data entries:');
+    data.data.slice(0, 3).forEach((item, i) => {
+        console.log(`${i + 1}.`, item);
+    });
 }
 
-testMFAPI();
+testMfapiDetails();
