@@ -198,9 +198,25 @@ const FundDetails = () => {
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={30} />
+                                    <XAxis dataKey="name" stroke="#666" tick={false} axisLine={false} tickLine={false} />
                                     <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
-                                    <Tooltip contentStyle={{ backgroundColor: '#121212', borderColor: '#333', borderRadius: '8px' }} itemStyle={{ color: '#00e676' }} labelStyle={{ color: '#999' }} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#121212', borderColor: '#333', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#00e676' }}
+                                        labelStyle={{ color: '#999' }}
+                                        labelFormatter={(label) => {
+                                            // Convert date string to DD-MM-YYYY format
+                                            const date = new Date(label);
+                                            if (!isNaN(date.getTime())) {
+                                                const day = String(date.getDate()).padStart(2, '0');
+                                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                const year = date.getFullYear();
+                                                return `${day}-${month}-${year}`;
+                                            }
+                                            return label;
+                                        }}
+                                        formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'NAV']}
+                                    />
                                     <Area type="monotone" dataKey="value" stroke="#00e676" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" animationDuration={500} />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -306,12 +322,18 @@ const FundDetails = () => {
                     <div className="bg-surface border border-border p-6 rounded-2xl">
                         <h3 className="text-lg font-bold text-white mb-4">Fund Performance</h3>
                         <div className="space-y-4">
-                            {Object.entries(fund.returns).map(([period, value]) => (
-                                <div key={period} className="flex items-center justify-between">
-                                    <span className="text-muted">{period} Return</span>
-                                    <span className="text-primary font-mono font-medium">+{value}%</span>
-                                </div>
-                            ))}
+                            {Object.entries(fund.returns).map(([period, value]) => {
+                                const numValue = parseFloat(value);
+                                const isPositive = numValue >= 0;
+                                return (
+                                    <div key={period} className="flex items-center justify-between">
+                                        <span className="text-muted">{period} Return</span>
+                                        <span className={`font-mono font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                            {isPositive ? '+' : ''}{numValue.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

@@ -1,16 +1,17 @@
 import React from 'react';
 import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut } from 'lucide-react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: TrendingUp, label: 'Mutual Funds', path: '/market?tab=mf' },
-        { icon: BarChart3, label: 'ETF', path: '/market?tab=etf' },
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/', exact: true },
+        { icon: TrendingUp, label: 'Mutual Funds', path: '/market?tab=mf', checkTab: 'mf' },
+        { icon: BarChart3, label: 'ETF', path: '/market?tab=etf', checkTab: 'etf' },
         { icon: PieChart, label: 'Portfolio', path: '/portfolio' },
         { icon: Settings, label: 'Settings', path: '/settings' },
     ];
@@ -18,6 +19,24 @@ const Sidebar = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const isItemActive = (item) => {
+        const currentPath = location.pathname;
+        const currentSearch = location.search;
+
+        // For items with tab check (MF and ETF)
+        if (item.checkTab) {
+            return currentPath === '/market' && currentSearch.includes(`tab=${item.checkTab}`);
+        }
+
+        // For Dashboard - exact match
+        if (item.exact) {
+            return currentPath === item.path;
+        }
+
+        // For other items
+        return currentPath === item.path.split('?')[0];
     };
 
     return (
@@ -34,8 +53,8 @@ const Sidebar = () => {
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive
+                        className={() =>
+                            `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isItemActive(item)
                                 ? 'bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,230,118,0.1)]'
                                 : 'text-muted hover:bg-white/5 hover:text-white'
                             }`

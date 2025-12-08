@@ -104,7 +104,7 @@ const Dashboard = () => {
                             <div key={i} className="min-w-[200px] h-[120px] bg-surface border border-border rounded-xl animate-pulse" />
                         ))
                     ) : (
-                        funds.slice(0, 4).map((fund) => (
+                        funds.slice(0, 6).map((fund) => (
                             <FundCard
                                 key={fund.id}
                                 fund={fund}

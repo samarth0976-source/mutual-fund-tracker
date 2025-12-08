@@ -935,7 +935,7 @@ app.get('/api/kotak/indices', async (req, res) => {
         }
 
         const baseUrl = kotakSession.baseUrl || 'https://mis.kotaksecurities.com';
-        const url = `${baseUrl}/script-details/1.0/quotes/neosymbol/nse_cm|Nifty 50,nse_cm|Nifty Bank,nse_cm|NIFTY IT,bse_cm|SENSEX/all`;
+        const url = `${baseUrl}/script-details/1.0/quotes/neosymbol/nse_cm|Nifty 50,nse_cm|Nifty Bank,nse_cm|NIFTY IT,nse_cm|NIFTY MID 50,nse_cm|NIFTY FIN SERVICE,bse_cm|SENSEX/all`;
 
         const response = await fetch(url, {
             headers: { 'Authorization': KOTAK_ACCESS_TOKEN }

@@ -56,11 +56,17 @@ const StockDetails = () => {
         // Filter and format data
         return history
             .filter(item => new Date(item.time * 1000) >= cutoffDate)
-            .map(item => ({
-                date: new Date(item.time * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-                fullDate: new Date(item.time * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-                price: item.close
-            }));
+            .map(item => {
+                const date = new Date(item.time * 1000);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return {
+                    date: `${day}-${month}`,
+                    fullDate: `${day}-${month}-${year}`,
+                    price: item.close
+                };
+            });
     }, [stockData, timeRange]);
 
     const calculateChange = () => {
@@ -131,10 +137,9 @@ const StockDetails = () => {
                                     <XAxis
                                         dataKey="date"
                                         stroke="#666"
-                                        tick={{ fill: '#666', fontSize: 12 }}
+                                        tick={false}
                                         axisLine={false}
                                         tickLine={false}
-                                        minTickGap={40}
                                     />
                                     <YAxis
                                         stroke="#666"
@@ -149,6 +154,7 @@ const StockDetails = () => {
                                         itemStyle={{ color: isPositive ? '#00e676' : '#ff5252' }}
                                         labelStyle={{ color: '#999' }}
                                         labelFormatter={(label, payload) => payload[0]?.payload?.fullDate || label}
+                                        formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'Price']}
                                     />
                                     <Area
                                         type="monotone"
