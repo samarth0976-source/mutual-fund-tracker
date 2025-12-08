@@ -22,8 +22,7 @@ const watchlistItemSchema = new mongoose.Schema({
 
 const watchlistSchema = new mongoose.Schema({
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,  // Changed from ObjectId to String for cross-backend compatibility
         required: true
     },
     name: {
