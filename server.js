@@ -1823,6 +1823,181 @@ app.delete('/api/auth/account', authenticateToken, async (req, res) => {
     }
 });
 
+// ===== WATCHLIST ENDPOINTS =====
+let Watchlist = null;
+
+// Import Watchlist model if MongoDB is connected
+if (MONGODB_URI) {
+    try {
+        const { default: WatchlistModel } = await import('./models/Watchlist.js');
+        Watchlist = WatchlistModel;
+        console.log('✅ Watchlist model loaded');
+    } catch (error) {
+        console.warn('⚠️ Failed to load Watchlist model:', error.message);
+    }
+}
+
+// Get all watchlists for user
+app.get('/api/watchlist', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const watchlists = await Watchlist.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.json({ watchlists });
+    } catch (error) {
+        console.error('Get watchlists error:', error);
+        res.status(500).json({ error: 'Failed to fetch watchlists' });
+    }
+});
+
+// Create new watchlist
+app.post('/api/watchlist', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Watchlist name is required' });
+        }
+
+        const watchlist = new Watchlist({
+            userId: req.user.id,
+            name: name.trim(),
+            items: []
+        });
+
+        await watchlist.save();
+        console.log(`✅ Created watchlist "${name}" for user ${req.user.id}`);
+        res.status(201).json({ watchlist });
+    } catch (error) {
+        console.error('Create watchlist error:', error);
+        res.status(500).json({ error: 'Failed to create watchlist' });
+    }
+});
+
+// Rename watchlist
+app.put('/api/watchlist/:id', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'New name is required' });
+        }
+
+        const watchlist = await Watchlist.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user.id },
+            { name: name.trim(), updatedAt: new Date() },
+            { new: true }
+        );
+
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+
+        res.json({ watchlist });
+    } catch (error) {
+        console.error('Rename watchlist error:', error);
+        res.status(500).json({ error: 'Failed to rename watchlist' });
+    }
+});
+
+// Delete watchlist
+app.delete('/api/watchlist/:id', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const result = await Watchlist.findOneAndDelete({
+            _id: req.params.id,
+            userId: req.user.id
+        });
+
+        if (!result) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+
+        res.json({ message: 'Watchlist deleted successfully' });
+    } catch (error) {
+        console.error('Delete watchlist error:', error);
+        res.status(500).json({ error: 'Failed to delete watchlist' });
+    }
+});
+
+// Add item to watchlist
+app.post('/api/watchlist/:id/items', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const { type, itemId, name } = req.body;
+
+        if (!type || !['mf', 'stock', 'etf'].includes(type)) {
+            return res.status(400).json({ error: 'Valid type (mf, stock, etf) is required' });
+        }
+        if (!itemId || !name) {
+            return res.status(400).json({ error: 'itemId and name are required' });
+        }
+
+        const watchlist = await Watchlist.findOne({ _id: req.params.id, userId: req.user.id });
+
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+
+        // Check if item already exists in this watchlist
+        const exists = watchlist.items.some(item => item.itemId === itemId && item.type === type);
+        if (exists) {
+            return res.status(400).json({ error: 'Item already in watchlist' });
+        }
+
+        watchlist.items.push({ type, itemId, name, addedAt: new Date() });
+        await watchlist.save();
+
+        console.log(`✅ Added ${type} "${name}" to watchlist "${watchlist.name}"`);
+        res.json({ watchlist });
+    } catch (error) {
+        console.error('Add item error:', error);
+        res.status(500).json({ error: 'Failed to add item to watchlist' });
+    }
+});
+
+// Remove item from watchlist
+app.delete('/api/watchlist/:id/items/:itemId', authenticateToken, async (req, res) => {
+    try {
+        if (!Watchlist) {
+            return res.status(503).json({ error: 'Watchlist service not available' });
+        }
+
+        const watchlist = await Watchlist.findOne({ _id: req.params.id, userId: req.user.id });
+
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+
+        const initialLength = watchlist.items.length;
+        watchlist.items = watchlist.items.filter(item => item._id.toString() !== req.params.itemId);
+
+        if (watchlist.items.length === initialLength) {
+            return res.status(404).json({ error: 'Item not found in watchlist' });
+        }
+
+        await watchlist.save();
+        res.json({ watchlist });
+    } catch (error) {
+        console.error('Remove item error:', error);
+        res.status(500).json({ error: 'Failed to remove item from watchlist' });
+    }
+});
+
 // Market news endpoint
 app.get('/api/news', authenticateToken, async (req, res) => {
     try {

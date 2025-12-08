@@ -18,6 +18,7 @@ import Terms from './pages/Terms';
 import Refunds from './pages/Refunds';
 import Settings from './pages/Settings';
 import StockDetails from './pages/StockDetails';
+import Watchlist from './pages/Watchlist';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-8 text-white">
@@ -67,6 +68,14 @@ function App() {
               <ProtectedRoute>
                 <AuthenticatedLayout>
                   <StockDetails />
+                </AuthenticatedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/watchlist" element={
+              <ProtectedRoute>
+                <AuthenticatedLayout>
+                  <Watchlist />
                 </AuthenticatedLayout>
               </ProtectedRoute>
             } />

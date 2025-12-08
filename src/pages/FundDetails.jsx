@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getFundDetails } from '../services/api';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AddToWatchlistButton from '../components/AddToWatchlistButton';
 
 const FundDetails = () => {
     const { id } = useParams();
@@ -188,6 +189,7 @@ const FundDetails = () => {
                                     <span className="px-2 py-1 rounded bg-white/5 border border-border">Equity</span>
                                     <span className="px-2 py-1 rounded bg-white/5 border border-border">Very High Risk</span>
                                     <span className="flex items-center gap-1 text-primary"><TrendingUp className="w-3 h-3" /> High Growth</span>
+                                    <AddToWatchlistButton type="mf" itemId={id} name={fund.name} />
                                 </div>
                             </div>
                             <div className="text-left md:text-right">

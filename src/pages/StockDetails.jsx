@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown, Activity, DollarSign, Calendar } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AddToWatchlistButton from '../components/AddToWatchlistButton';
 
 const StockDetails = () => {
     const { name } = useParams();
@@ -112,6 +113,7 @@ const StockDetails = () => {
                                 <div className="flex items-center gap-2 text-sm text-muted">
                                     <span className="px-2 py-0.5 rounded bg-white/5 border border-border">{stockData.exchange}:{stockData.symbol}</span>
                                     <span>{stockData.description}</span>
+                                    <AddToWatchlistButton type="stock" itemId={stockData.symbol} name={name} />
                                 </div>
                             </div>
                             <div className="text-left md:text-right">
