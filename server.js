@@ -553,7 +553,11 @@ app.get('/api/holdings', async (req, res) => {
     }
 
     try {
-        const holdingsCacheKey = `holdings_${schemeCode || name}`;
+        // Use schemeCode as primary cache key to prevent collisions
+        if (!schemeCode) {
+            console.log(`⚠️ No schemeCode provided for: ${name}`);
+        }
+        const holdingsCacheKey = `holdings_${schemeCode || 'name_' + name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
 
         // Check Redis first (persistent cache)
         const redisData = await redisGet(holdingsCacheKey);
@@ -649,7 +653,28 @@ app.get('/api/holdings', async (req, res) => {
 // Function to fetch from Groww using their API (replaces Puppeteer scraping)
 async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
     try {
-        console.log(`🔄 Fetching from Groww API: ${name}`);
+        console.log(`🔄 Fetching from Groww API: ${name} (schemeCode: ${schemeCode})`);
+
+        // Extract significant keywords from fund name for matching
+        const originalNameLower = name.toLowerCase();
+
+        // Extract fund type keywords for stricter matching
+        const fundTypeKeywords = [];
+        if (originalNameLower.includes('small') && originalNameLower.includes('cap')) fundTypeKeywords.push('small');
+        if (originalNameLower.includes('mid') && originalNameLower.includes('cap')) fundTypeKeywords.push('mid');
+        if (originalNameLower.includes('large') && originalNameLower.includes('cap')) fundTypeKeywords.push('large');
+        if (originalNameLower.includes('flexi')) fundTypeKeywords.push('flexi');
+        if (originalNameLower.includes('bluechip')) fundTypeKeywords.push('bluechip');
+        if (originalNameLower.includes('blue chip')) fundTypeKeywords.push('blue');
+        if (originalNameLower.includes('index')) fundTypeKeywords.push('index');
+        if (originalNameLower.includes('elss') || originalNameLower.includes('tax')) fundTypeKeywords.push('elss', 'tax');
+        if (originalNameLower.includes('focused')) fundTypeKeywords.push('focused');
+        if (originalNameLower.includes('value')) fundTypeKeywords.push('value');
+        if (originalNameLower.includes('contra')) fundTypeKeywords.push('contra');
+        if (originalNameLower.includes('multi')) fundTypeKeywords.push('multi');
+        if (originalNameLower.includes('nifty')) fundTypeKeywords.push('nifty');
+        if (originalNameLower.includes('balanced')) fundTypeKeywords.push('balanced');
+        if (originalNameLower.includes('equity')) fundTypeKeywords.push('equity');
 
         // Clean the fund name for better search results
         const cleanName = name
@@ -659,15 +684,27 @@ async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
             .replace(/\s+/g, ' ')
             .trim();
 
-        // Extract AMC name for better matching
-        const amcMatch = cleanName.match(/^(HDFC|ICICI|SBI|Axis|Kotak|Nippon|Tata|DSP|Mirae|Aditya Birla|UTI|L&T|Franklin|PGIM|Canara|Edelweiss|Invesco|Motilal|Sundaram|HSBC)/i);
-        const amcName = amcMatch ? amcMatch[0] : '';
+        // Extract AMC name for matching (must match)
+        const amcPatterns = ['hdfc', 'icici prudential', 'icici', 'sbi', 'axis', 'kotak', 'nippon india', 'nippon',
+            'tata', 'dsp', 'mirae asset', 'mirae', 'aditya birla', 'uti', 'franklin', 'pgim',
+            'canara robeco', 'canara', 'edelweiss', 'invesco', 'motilal oswal', 'motilal',
+            'sundaram', 'hsbc', 'bandhan', 'baroda bnp', 'union', 'jm', 'quant', 'ppfas', 'parag parikh', 'lic'];
+
+        let amcName = '';
+        for (const amc of amcPatterns) {
+            if (originalNameLower.includes(amc)) {
+                amcName = amc;
+                break;
+            }
+        }
+
+        console.log(`📌 AMC: ${amcName || 'unknown'}, Fund Type: ${fundTypeKeywords.join(', ') || 'generic'}`);
 
         // Build search query
         const searchQuery = encodeURIComponent(cleanName + ' Direct Growth');
-        const searchUrl = `https://groww.in/v1/api/search/v1/entity?q=${searchQuery}&page=0&size=10&entity_type=scheme`;
+        const searchUrl = `https://groww.in/v1/api/search/v1/entity?q=${searchQuery}&page=0&size=15&entity_type=scheme`;
 
-        console.log(`🔍 Groww Search: ${searchQuery}`);
+        console.log(`🔍 Groww Search: ${cleanName}`);
 
         const searchResponse = await axios.get(searchUrl, {
             headers: {
@@ -680,37 +717,86 @@ async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
 
         if (!searchResponse.data.content || searchResponse.data.content.length === 0) {
             console.log(`❌ No funds found in Groww search for: ${name}`);
-            return res.status(404).json({ error: "Fund not found on Groww" });
+            return res.status(404).json({ error: "Fund not found on Groww", searchedFor: name });
         }
 
-        // Find the best match
+        // Score-based matching for best result
         let fund = null;
+        let bestScore = 0;
         const results = searchResponse.data.content;
 
-        // Priority 1: Exact AMC + contains Direct + contains Growth
-        if (amcName) {
+        for (const f of results) {
+            const title = f.title?.toLowerCase() || '';
+            const searchId = f.search_id?.toLowerCase() || '';
+            const combined = title + ' ' + searchId; // Check both title and search_id
+            let score = 0;
+            let typeMatched = 0;
+
+            // Must be Direct plan (check both title and search_id)
+            if (!combined.includes('direct')) continue;
+
+            // AMC must match (if we identified one) - use word boundary for short AMC names
+            if (amcName) {
+                // For short AMC names that could be prefixes (like 'quant'), use word boundary
+                const needsWordBoundary = ['quant', 'jm', 'uti', 'dsp', 'sbi', 'lic'].includes(amcName);
+                if (needsWordBoundary) {
+                    const regex = new RegExp(`\\b${amcName}\\b`, 'i');
+                    if (!regex.test(combined)) continue;
+                } else {
+                    if (!combined.includes(amcName)) continue;
+                }
+            }
+            score += 10;
+
+            // Fund type keywords matching - MANDATORY if we have keywords
+            // If original fund has "small cap", result MUST have "small" in title/id
+            for (const kw of fundTypeKeywords) {
+                if (combined.includes(kw)) {
+                    score += 5;
+                    typeMatched++;
+                }
+            }
+
+            // If we have fund type keywords but none matched, skip this result
+            // This is critical to prevent Small Cap matching to Index funds
+            if (fundTypeKeywords.length > 0 && typeMatched === 0) continue;
+
+            // Prefer Growth over IDCW/Dividend
+            if (combined.includes('growth')) score += 3;
+            if (combined.includes('idcw') || combined.includes('dividend')) score -= 5;
+
+            // Penalize index funds when original is not an index fund
+            if (combined.includes('index') && !fundTypeKeywords.includes('index')) score -= 10;
+
+            // Penalize mismatched fund types (e.g., "large & mid" when searching for just "mid")
+            const originalHasLarge = originalNameLower.includes('large');
+            const resultHasLarge = combined.includes('large');
+            if (resultHasLarge && !originalHasLarge) score -= 8;
+
+            // Penalize FoF (Fund of Funds) when original is not FoF
+            if (combined.includes('fof') && !originalNameLower.includes('fof')) score -= 5;
+
+            if (score > bestScore) {
+                bestScore = score;
+                fund = f;
+            }
+        }
+
+        // Fallback if no score-based match
+        if (!fund && results.length > 0) {
+            console.log(`⚠️ No strict match, using first Direct result`);
             fund = results.find(f => {
-                const title = f.title?.toLowerCase() || '';
-                return title.includes(amcName.toLowerCase()) &&
-                    title.includes('direct') &&
-                    title.includes('growth');
-            });
+                const combined = (f.title?.toLowerCase() || '') + ' ' + (f.search_id?.toLowerCase() || '');
+                return combined.includes('direct');
+            }) || results[0];
         }
 
-        // Priority 2: Contains Direct + contains Growth
         if (!fund) {
-            fund = results.find(f => {
-                const title = f.title?.toLowerCase() || '';
-                return title.includes('direct') && title.includes('growth');
-            });
+            console.log(`❌ No matching fund found for: ${name}`);
+            return res.status(404).json({ error: 'No matching fund found on Groww', searchedFor: name });
         }
 
-        // Priority 3: First result
-        if (!fund) {
-            fund = results[0];
-        }
-
-        console.log(`✅ Found fund: ${fund.title || fund.name} (search_id: ${fund.search_id})`);
+        console.log(`✅ Best match (score:${bestScore}): ${fund.title} (search_id: ${fund.search_id})`);
 
         if (!fund.search_id) {
             console.log(`❌ No search_id for fund: ${fund.title}`);
@@ -755,9 +841,12 @@ async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
         const response = {
             holdings,
             meta: {
-                fund: schemeResponse.data.scheme_name || name,
+                fund: schemeResponse.data.scheme_name || fund.title,
+                requestedFund: name,
+                schemeCode: schemeCode,
                 totalHoldings: holdings.length,
                 dataSource: 'Groww API',
+                matchScore: bestScore,
                 portfolioDate: holdingsRaw[0]?.portfolio_date || null,
                 timestamp: new Date().toISOString()
             }
