@@ -547,7 +547,7 @@ const processBatch = async (batch) => {
 };
 
 app.get('/api/holdings', async (req, res) => {
-    const { name, schemeCode } = req.query;
+    const { name, schemeCode, refresh } = req.query;
     if (!name) {
         return res.status(400).json({ error: "Fund name is required" });
     }
@@ -557,35 +557,44 @@ app.get('/api/holdings', async (req, res) => {
         if (!schemeCode) {
             console.log(`⚠️ No schemeCode provided for: ${name}`);
         }
-        const holdingsCacheKey = `holdings_${schemeCode || 'name_' + name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+        const holdingsCacheKey = `holdings_v2_${schemeCode || 'name_' + name.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50).toLowerCase()}`;
 
-        // Check Redis first (persistent cache)
-        const redisData = await redisGet(holdingsCacheKey);
-        if (redisData) {
-            console.log(`📦 Redis HIT: ${name}`);
-            return res.json({
-                ...redisData,
-                meta: {
-                    ...redisData.meta,
-                    cached: true,
-                    cacheSource: 'redis'
-                }
-            });
-        }
+        console.log(`🔍 Holdings request: name="${name.substring(0, 40)}", schemeCode=${schemeCode}, refresh=${refresh}, cacheKey=${holdingsCacheKey}`);
 
-        // Check NodeCache as fallback
-        const cachedHoldings = holdingsCache.get(holdingsCacheKey);
-        if (cachedHoldings) {
-            console.log(`📦 Memory HIT: ${name}`);
-            await redisSet(holdingsCacheKey, cachedHoldings);
-            return res.json({
-                ...cachedHoldings,
-                meta: {
-                    ...cachedHoldings.meta,
-                    cached: true,
-                    cacheSource: 'memory'
-                }
-            });
+        // Skip cache if refresh=true
+        if (refresh !== 'true') {
+            // Check Redis first (persistent cache)
+            const redisData = await redisGet(holdingsCacheKey);
+            if (redisData) {
+                console.log(`📦 Redis HIT for ${schemeCode}: ${name.substring(0, 30)}`);
+                return res.json({
+                    ...redisData,
+                    meta: {
+                        ...redisData.meta,
+                        cached: true,
+                        cacheSource: 'redis',
+                        cacheKey: holdingsCacheKey
+                    }
+                });
+            }
+
+            // Check NodeCache as fallback
+            const cachedHoldings = holdingsCache.get(holdingsCacheKey);
+            if (cachedHoldings) {
+                console.log(`📦 Memory HIT for ${schemeCode}: ${name.substring(0, 30)}`);
+                await redisSet(holdingsCacheKey, cachedHoldings);
+                return res.json({
+                    ...cachedHoldings,
+                    meta: {
+                        ...cachedHoldings.meta,
+                        cached: true,
+                        cacheSource: 'memory',
+                        cacheKey: holdingsCacheKey
+                    }
+                });
+            }
+        } else {
+            console.log(`🔄 Refresh requested - bypassing cache for ${schemeCode}`);
         }
 
         // Try Python Holdings Service first (yahooquery)
