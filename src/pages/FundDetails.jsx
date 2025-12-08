@@ -135,6 +135,17 @@ const FundDetails = () => {
     const chartData = useMemo(() => {
         if (!fund || !fund.history) return [];
 
+        // Helper to parse MFAPI date (DD-MM-YYYY format)
+        const parseMfapiDate = (dateStr) => {
+            if (!dateStr) return new Date(0);
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                // DD-MM-YYYY format
+                return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+            return new Date(dateStr);
+        };
+
         const history = [...fund.history].reverse();
         const now = new Date();
         let cutoffDate = new Date();
@@ -148,8 +159,8 @@ const FundDetails = () => {
             default: cutoffDate = new Date(0);
         }
 
-        const data = history.filter(item => new Date(item.date) >= cutoffDate).map(item => {
-            const dateObj = new Date(item.date);
+        const data = history.filter(item => parseMfapiDate(item.date) >= cutoffDate).map(item => {
+            const dateObj = parseMfapiDate(item.date);
             const day = String(dateObj.getDate()).padStart(2, '0');
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const year = dateObj.getFullYear();
