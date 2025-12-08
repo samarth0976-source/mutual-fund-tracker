@@ -52,8 +52,8 @@ const Market = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    // Tab state from URL params
-    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'mf');
+    // Tab state derived from URL params - updates when URL changes
+    const activeTab = searchParams.get('tab') || 'mf';
 
     // Filter states
     const [activeQuickFilters, setActiveQuickFilters] = useState([]);
@@ -344,7 +344,7 @@ const Market = () => {
             {/* Tab Navigation */}
             <div className="flex items-center gap-1 p-1 bg-surface rounded-xl border border-border w-fit">
                 <button
-                    onClick={() => setActiveTab('mf')}
+                    onClick={() => navigate('/market?tab=mf')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'mf'
                         ? 'bg-primary text-white shadow-lg'
                         : 'text-muted hover:text-white hover:bg-card-bg'
@@ -354,7 +354,7 @@ const Market = () => {
                     Mutual Funds
                 </button>
                 <button
-                    onClick={() => setActiveTab('etf')}
+                    onClick={() => navigate('/market?tab=etf')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'etf'
                         ? 'bg-primary text-white shadow-lg'
                         : 'text-muted hover:text-white hover:bg-card-bg'

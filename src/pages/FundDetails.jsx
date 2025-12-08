@@ -148,10 +148,17 @@ const FundDetails = () => {
             default: cutoffDate = new Date(0);
         }
 
-        const data = history.filter(item => new Date(item.date) >= cutoffDate).map(item => ({
-            name: new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            value: parseFloat(item.nav)
-        }));
+        const data = history.filter(item => new Date(item.date) >= cutoffDate).map(item => {
+            const dateObj = new Date(item.date);
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return {
+                name: `${day}-${month}`,
+                fullDate: `${day}-${month}-${year}`,
+                value: parseFloat(item.nav)
+            };
+        });
         return data;
     }, [fund, selectedPeriod]);
 
@@ -204,17 +211,7 @@ const FundDetails = () => {
                                         contentStyle={{ backgroundColor: '#121212', borderColor: '#333', borderRadius: '8px' }}
                                         itemStyle={{ color: '#00e676' }}
                                         labelStyle={{ color: '#999' }}
-                                        labelFormatter={(label) => {
-                                            // Convert date string to DD-MM-YYYY format
-                                            const date = new Date(label);
-                                            if (!isNaN(date.getTime())) {
-                                                const day = String(date.getDate()).padStart(2, '0');
-                                                const month = String(date.getMonth() + 1).padStart(2, '0');
-                                                const year = date.getFullYear();
-                                                return `${day}-${month}-${year}`;
-                                            }
-                                            return label;
-                                        }}
+                                        labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
                                         formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'NAV']}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="#00e676" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" animationDuration={500} />
