@@ -646,43 +646,69 @@ app.get('/api/holdings', async (req, res) => {
     }
 });
 
-// Fallback function to fetch from Groww using Puppeteer
+// Function to fetch from Groww using their API (replaces Puppeteer scraping)
 async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
     try {
-        const baseSlug = name
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '');
+        console.log(`🔄 Fetching from Groww API: ${name}`);
 
-        const slug = `${baseSlug}-direct-growth`;
-        const pageUrl = `https://groww.in/mutual-funds/${slug}`;
+        // Step 1: Search for the fund to get the search_id
+        const searchQuery = encodeURIComponent(name + ' Direct Growth');
+        const searchUrl = `https://groww.in/v1/api/search/v1/entity?q=${searchQuery}&page=0&size=5&entity_type=scheme`;
 
-        console.log(`🔄 Fallback to Groww: ${pageUrl}`);
-        const nextData = await fetchPageWithPuppeteer(pageUrl);
+        console.log(`🔍 Groww Search: ${searchUrl}`);
 
-        if (!nextData) {
-            return res.status(500).json({ error: "Failed to fetch from Groww" });
+        const searchResponse = await axios.get(searchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 15000
+        });
+
+        if (!searchResponse.data.content || searchResponse.data.content.length === 0) {
+            console.log(`❌ No funds found in Groww search for: ${name}`);
+            return res.status(404).json({ error: "Fund not found on Groww" });
         }
 
-        const findKey = (obj, key) => {
-            if (obj && typeof obj === 'object') {
-                if (obj[key]) return obj[key];
-                for (const k in obj) {
-                    const result = findKey(obj[k], key);
-                    if (result) return result;
-                }
-            }
-            return null;
-        };
+        // Find the best match (prefer Direct Growth plans)
+        let fund = searchResponse.data.content.find(f =>
+            f.title?.toLowerCase().includes('direct') &&
+            f.title?.toLowerCase().includes('growth')
+        ) || searchResponse.data.content[0];
 
-        const holdingsRaw = findKey(nextData, "holdings");
+        console.log(`✅ Found fund: ${fund.title || fund.name} (search_id: ${fund.search_id})`);
 
-        if (!holdingsRaw || !Array.isArray(holdingsRaw)) {
+        if (!fund.search_id) {
+            console.log(`❌ No search_id for fund: ${fund.title}`);
+            return res.status(404).json({ error: "Fund search_id not found" });
+        }
+
+        // Step 2: Fetch scheme details including holdings
+        const schemeUrl = `https://groww.in/v1/api/data/mf/web/v4/scheme/search/${fund.search_id}`;
+        console.log(`📊 Fetching scheme data: ${schemeUrl}`);
+
+        const schemeResponse = await axios.get(schemeUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Origin': 'https://groww.in',
+                'Referer': 'https://groww.in/'
+            },
+            timeout: 15000
+        });
+
+        const holdingsRaw = schemeResponse.data.holdings;
+
+        if (!holdingsRaw || !Array.isArray(holdingsRaw) || holdingsRaw.length === 0) {
+            console.log(`❌ No holdings data found for: ${name}`);
             return res.status(404).json({ error: "Holdings data not found" });
         }
 
+        console.log(`✅ Found ${holdingsRaw.length} holdings for ${name}`);
+
+        // Process holdings
         const holdings = holdingsRaw.map(item => ({
             name: item.company_name || "Unknown",
             sector: item.sector_name || "Equity",
@@ -696,23 +722,26 @@ async function fetchFromGroww(req, res, name, schemeCode, holdingsCacheKey) {
         const response = {
             holdings,
             meta: {
-                fund: name,
+                fund: schemeResponse.data.scheme_name || name,
                 totalHoldings: holdings.length,
-                dataSource: 'Groww (Fallback)',
+                dataSource: 'Groww API',
+                portfolioDate: holdingsRaw[0]?.portfolio_date || null,
                 timestamp: new Date().toISOString()
             }
         };
 
+        // Cache the result
         await redisSet(holdingsCacheKey, response);
         holdingsCache.set(holdingsCacheKey, response);
-        console.log(`✅ Cached from Groww: ${name}`);
+        console.log(`✅ Cached from Groww API: ${name} (${holdings.length} holdings)`);
 
         return res.json(response);
     } catch (error) {
-        console.error('Groww fallback error:', error.message);
-        return res.status(500).json({ error: 'Failed to fetch holdings' });
+        console.error('Groww API error:', error.message);
+        return res.status(500).json({ error: 'Failed to fetch holdings from Groww' });
     }
 }
+
 
 app.get('/api/stock/details', async (req, res) => {
     const { name } = req.query;
