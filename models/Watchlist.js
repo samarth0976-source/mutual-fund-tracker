@@ -42,9 +42,8 @@ const watchlistSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt timestamp on save
-watchlistSchema.pre('save', function (next) {
+watchlistSchema.pre('save', function () {
     this.updatedAt = Date.now();
-    next();
 });
 
 // Index for faster queries
