@@ -125,15 +125,20 @@ const redisSet = async (key, value, ttl = REDIS_TTL) => {
 // MongoDB Connection (optional - falls back to file-based if not configured)
 const MONGODB_URI = process.env.MONGODB_URI;
 let User = null;
+let Watchlist = null;
 
 if (MONGODB_URI) {
     try {
         await mongoose.connect(MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
-        // Dynamically import User model only if MongoDB is connected
+        // Dynamically import models only if MongoDB is connected
         const { default: UserModel } = await import('./models/User.js');
         User = UserModel;
+
+        const { default: WatchlistModel } = await import('./models/Watchlist.js');
+        Watchlist = WatchlistModel;
+        console.log('✅ Watchlist model loaded');
     } catch (error) {
         console.warn('⚠️  MongoDB connection failed, using file-based storage:', error.message);
     }
@@ -1824,18 +1829,7 @@ app.delete('/api/auth/account', authenticateToken, async (req, res) => {
 });
 
 // ===== WATCHLIST ENDPOINTS =====
-let Watchlist = null;
-
-// Import Watchlist model if MongoDB is connected
-if (MONGODB_URI) {
-    try {
-        const { default: WatchlistModel } = await import('./models/Watchlist.js');
-        Watchlist = WatchlistModel;
-        console.log('✅ Watchlist model loaded');
-    } catch (error) {
-        console.warn('⚠️ Failed to load Watchlist model:', error.message);
-    }
-}
+// Note: Watchlist model is imported at the top with User model
 
 // Get all watchlists for user
 app.get('/api/watchlist', authenticateToken, async (req, res) => {
