@@ -1849,7 +1849,10 @@ app.get('/api/watchlist', authenticateToken, async (req, res) => {
 // Create new watchlist
 app.post('/api/watchlist', authenticateToken, async (req, res) => {
     try {
+        console.log('📝 Creating watchlist - User:', req.user?.id, 'Body:', JSON.stringify(req.body));
+
         if (!Watchlist) {
+            console.error('❌ Watchlist model not loaded!');
             return res.status(503).json({ error: 'Watchlist service not available' });
         }
 
@@ -1858,18 +1861,25 @@ app.post('/api/watchlist', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Watchlist name is required' });
         }
 
+        const userId = req.user.id?.toString() || req.user._id?.toString();
+        console.log('📝 Creating watchlist with userId:', userId, 'name:', name.trim());
+
         const watchlist = new Watchlist({
-            userId: req.user.id,
+            userId: userId,
             name: name.trim(),
             items: []
         });
 
+        console.log('📝 Watchlist document to save:', JSON.stringify(watchlist.toObject()));
+
         await watchlist.save();
-        console.log(`✅ Created watchlist "${name}" for user ${req.user.id}`);
+        console.log(`✅ Created watchlist "${name}" for user ${userId}`);
         res.status(201).json({ watchlist });
     } catch (error) {
-        console.error('Create watchlist error:', error);
-        res.status(500).json({ error: 'Failed to create watchlist' });
+        console.error('❌ Create watchlist error:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        console.error('❌ Error name:', error.name);
+        res.status(500).json({ error: 'Failed to create watchlist: ' + error.message });
     }
 });
 
