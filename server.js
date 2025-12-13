@@ -2415,6 +2415,196 @@ const warmCache = async () => {
 //     warmCache().catch(err => console.error('Daily cache refresh error:', err));
 // });
 
+// ===== IPO ENDPOINTS =====
+const ipoCache = new NodeCache({ stdTTL: 1800 }); // 30 min cache
+
+// Scrape IPO data from investorgain.com
+async function scrapeIPOData() {
+    const cacheKey = 'ipo_data';
+
+    // Check memory cache
+    const cached = ipoCache.get(cacheKey);
+    if (cached) {
+        console.log('📦 IPO data from memory cache');
+        return cached;
+    }
+
+    // Check Redis cache
+    if (redis) {
+        try {
+            const redisData = await redis.get(cacheKey);
+            if (redisData) {
+                console.log('📦 IPO data from Redis cache');
+                ipoCache.set(cacheKey, redisData);
+                return redisData;
+            }
+        } catch (e) {
+            console.warn('Redis IPO cache read error:', e.message);
+        }
+    }
+
+    console.log('🔄 Scraping IPO data from investorgain.com...');
+
+    try {
+        const response = await axios.get('https://www.investorgain.com/report/live-ipo-gmp/331/', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            },
+            timeout: 15000
+        });
+
+        const $ = cheerio.load(response.data);
+        const ipos = [];
+
+        // Parse the IPO table
+        $('table tbody tr').each((index, row) => {
+            const cells = $(row).find('td');
+            if (cells.length >= 6) {
+                const name = $(cells[0]).text().trim();
+                const priceText = $(cells[1]).text().trim();
+                const gmpText = $(cells[2]).text().trim();
+                const estListingText = $(cells[3]).text().trim();
+                const fireRatingText = $(cells[4]).text().trim();
+                const dateText = $(cells[5]).text().trim();
+
+                // Skip if not a valid IPO row
+                if (!name || name.length < 2) return;
+
+                // Parse price (handle ranges like "₹200 to ₹210")
+                const priceMatch = priceText.match(/₹?\s*(\d+(?:\.\d+)?)/g);
+                const issuePrice = priceMatch ? parseFloat(priceMatch[priceMatch.length - 1].replace('₹', '').trim()) : null;
+
+                // Parse GMP
+                const gmpMatch = gmpText.match(/-?\d+/);
+                const gmp = gmpMatch ? parseInt(gmpMatch[0]) : 0;
+
+                // Parse estimated listing price
+                const estMatch = estListingText.match(/₹?\s*(\d+(?:\.\d+)?)/);
+                const estListingPrice = estMatch ? parseFloat(estMatch[1]) : (issuePrice ? issuePrice + gmp : null);
+
+                // Parse fire rating (count of 🔥 emojis)
+                const fireRating = (fireRatingText.match(/🔥/g) || []).length;
+
+                // Determine status based on date text
+                let status = 'upcoming';
+                let openDate = null;
+                let closeDate = null;
+                let listingDate = null;
+
+                const dateTextLower = dateText.toLowerCase();
+                if (dateTextLower.includes('listed') || dateTextLower.includes('closed')) {
+                    status = 'closed';
+                } else if (dateTextLower.includes('open') || dateTextLower.includes('ongoing') || dateTextLower.includes('live')) {
+                    status = 'ongoing';
+                }
+
+                // Try to extract dates (format varies)
+                const dateMatches = dateText.match(/(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/gi);
+                if (dateMatches && dateMatches.length >= 1) {
+                    openDate = dateMatches[0];
+                    if (dateMatches.length >= 2) {
+                        closeDate = dateMatches[1];
+                    }
+                }
+
+                // Calculate expected listing gain %
+                const expectedGainPercent = issuePrice ? ((gmp / issuePrice) * 100).toFixed(1) : null;
+
+                // Determine IPO type (SME vs Mainboard)
+                const isSME = name.toLowerCase().includes('sme') || (issuePrice && issuePrice < 100);
+
+                ipos.push({
+                    name: name.replace(/\s*(SME|IPO)\s*/gi, ' ').trim(),
+                    issuePrice,
+                    gmp,
+                    estListingPrice,
+                    expectedGainPercent: expectedGainPercent ? parseFloat(expectedGainPercent) : null,
+                    fireRating,
+                    status,
+                    openDate,
+                    closeDate,
+                    listingDate,
+                    type: isSME ? 'SME' : 'Mainboard',
+                    listingGain: null,
+                    listingPrice: null,
+                    subscription: null
+                });
+            }
+        });
+
+        // Sort by fire rating and GMP
+        ipos.sort((a, b) => {
+            if (b.fireRating !== a.fireRating) return b.fireRating - a.fireRating;
+            return (b.gmp || 0) - (a.gmp || 0);
+        });
+
+        const result = {
+            upcoming: ipos.filter(i => i.status === 'upcoming'),
+            ongoing: ipos.filter(i => i.status === 'ongoing'),
+            closed: ipos.filter(i => i.status === 'closed').slice(0, 20), // Limit closed IPOs
+            lastUpdated: new Date().toISOString()
+        };
+
+        // Cache the results
+        ipoCache.set(cacheKey, result);
+        if (redis) {
+            try {
+                await redis.set(cacheKey, result, { ex: 1800 });
+                console.log('💾 IPO data cached to Redis');
+            } catch (e) {
+                console.warn('Redis IPO cache write error:', e.message);
+            }
+        }
+
+        console.log(`✅ Scraped ${ipos.length} IPOs: ${result.upcoming.length} upcoming, ${result.ongoing.length} ongoing, ${result.closed.length} closed`);
+        return result;
+
+    } catch (error) {
+        console.error('❌ IPO scraping error:', error.message);
+
+        // Return fallback data if scraping fails
+        return {
+            upcoming: [],
+            ongoing: [],
+            closed: [],
+            lastUpdated: new Date().toISOString(),
+            error: 'Failed to fetch IPO data. Please try again later.'
+        };
+    }
+}
+
+// GET /api/ipo - Get all IPO data
+app.get('/api/ipo', async (req, res) => {
+    try {
+        const data = await scrapeIPOData();
+        res.json(data);
+    } catch (error) {
+        console.error('IPO endpoint error:', error);
+        res.status(500).json({ error: 'Failed to fetch IPO data' });
+    }
+});
+
+// GET /api/ipo/:status - Get IPOs by status (upcoming/ongoing/closed)
+app.get('/api/ipo/:status', async (req, res) => {
+    try {
+        const { status } = req.params;
+        if (!['upcoming', 'ongoing', 'closed'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Use: upcoming, ongoing, or closed' });
+        }
+
+        const data = await scrapeIPOData();
+        res.json({
+            ipos: data[status] || [],
+            lastUpdated: data.lastUpdated
+        });
+    } catch (error) {
+        console.error('IPO status endpoint error:', error);
+        res.status(500).json({ error: 'Failed to fetch IPO data' });
+    }
+});
+
 // SPA Fallback - serve index.html for all non-API routes (React Router support)
 app.get('/{*splat}', (req, res) => {
     // Don't serve index.html for API routes

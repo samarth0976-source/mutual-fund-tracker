@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut, Bookmark } from 'lucide-react';
+import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut, Bookmark, Flame } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,6 +12,7 @@ const Sidebar = () => {
         { icon: LayoutDashboard, label: 'Dashboard', path: '/', exact: true },
         { icon: TrendingUp, label: 'Mutual Funds', path: '/market?tab=mf', checkTab: 'mf' },
         { icon: BarChart3, label: 'ETF', path: '/market?tab=etf', checkTab: 'etf' },
+        { icon: Flame, label: 'IPO', path: '/ipo' },
         { icon: Bookmark, label: 'Watchlist', path: '/watchlist' },
         { icon: PieChart, label: 'Portfolio', path: '/portfolio' },
         { icon: Settings, label: 'Settings', path: '/settings' },

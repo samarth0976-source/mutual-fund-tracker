@@ -19,6 +19,7 @@ import Refunds from './pages/Refunds';
 import Settings from './pages/Settings';
 import StockDetails from './pages/StockDetails';
 import Watchlist from './pages/Watchlist';
+import IPO from './pages/IPO';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-8 text-white">
@@ -76,6 +77,14 @@ function App() {
               <ProtectedRoute>
                 <AuthenticatedLayout>
                   <Watchlist />
+                </AuthenticatedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/ipo" element={
+              <ProtectedRoute>
+                <AuthenticatedLayout>
+                  <IPO />
                 </AuthenticatedLayout>
               </ProtectedRoute>
             } />
