@@ -33,7 +33,13 @@ app.use(express.json());
 // Health check for Render
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// Serve static files (after middleware)
+// EARLY API ROUTES - Must be before static files
+// Simple test endpoint to verify API routing works
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
+
+// Serve static files (after early API routes)
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Cache clear endpoint for debugging
