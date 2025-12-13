@@ -41,7 +41,10 @@ RUN npm ci --only=production
 # Copy built frontend from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy backend source code
+# Cache bust for server.js changes
+ARG CACHEBUST=1
+
+# Copy backend source code (must be after CACHEBUST to avoid caching old versions)
 COPY server.js ./
 COPY models ./models
 # Copy other necessary backend files/folders if any (e.g., utils, services)
