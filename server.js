@@ -39,8 +39,7 @@ app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
-// Serve static files (after early API routes)
-app.use(express.static(path.join(__dirname, 'dist')));
+// NOTE: Static files are served AFTER all API routes - see end of file
 
 // Cache clear endpoint for debugging
 app.post('/api/cache/clear', async (req, res) => {
@@ -2612,6 +2611,9 @@ app.get('/api/ipo/:status', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch IPO data' });
     }
 });
+
+// Serve static files AFTER all API routes to prevent catching /api/* requests
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA Fallback - serve index.html for all non-API routes (React Router support)
 app.get('/{*splat}', (req, res) => {
