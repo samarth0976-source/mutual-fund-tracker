@@ -22,13 +22,25 @@ const IPO = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${BACKEND_URL}/api/ipo`);
+            const url = `${BACKEND_URL}/api/ipo`;
+            console.log('Fetching IPO data from:', url);
+            const response = await fetch(url);
+            console.log('IPO response status:', response.status, 'content-type:', response.headers.get('content-type'));
+
             if (!response.ok) throw new Error('Failed to fetch IPO data');
-            const data = await response.json();
+
+            const text = await response.text();
+            // Check if response is actually JSON
+            if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+                throw new Error('Received HTML instead of JSON. Please refresh the page.');
+            }
+
+            const data = JSON.parse(text);
             setIpoData(data);
             setLastUpdated(data.lastUpdated);
             if (data.error) setError(data.error);
         } catch (err) {
+            console.error('IPO fetch error:', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -207,8 +219,8 @@ const IPO = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-primary text-black'
-                                    : 'text-muted hover:text-white hover:bg-white/5'
+                                ? 'bg-primary text-black'
+                                : 'text-muted hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             {tab.label}
