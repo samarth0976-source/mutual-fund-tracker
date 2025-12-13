@@ -1,4 +1,4 @@
-// Build: 2025-12-14T00:01:00Z - IPO Feature v1.2.0
+// Build: 2025-12-14T00:55:00Z - IPO Feature v1.2.1 DEBUG
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -2417,6 +2417,7 @@ const warmCache = async () => {
 // });
 
 // ===== IPO ENDPOINTS =====
+console.log('📈 Registering IPO endpoints...');
 const ipoCache = new NodeCache({ stdTTL: 1800 }); // 30 min cache
 
 // Scrape IPO data from investorgain.com
