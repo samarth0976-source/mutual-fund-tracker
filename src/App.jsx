@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { MobileProvider } from './contexts/MobileContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -22,20 +23,22 @@ import Watchlist from './pages/Watchlist';
 import IPO from './pages/IPO';
 
 const PlaceholderPage = ({ title }) => (
-  <div className="p-8 text-white">
-    <h1 className="text-3xl font-bold mb-4">{title}</h1>
+  <div className="p-4 lg:p-8 text-white">
+    <h1 className="text-2xl lg:text-3xl font-bold mb-4">{title}</h1>
     <p className="text-muted">Coming soon...</p>
   </div>
 );
 
 const AuthenticatedLayout = ({ children }) => (
-  <div className="min-h-screen bg-background text-text font-sans selection:bg-primary/30 selection:text-primary">
-    <Sidebar />
-    <Header />
-    <main className="ml-64 p-8 min-h-[calc(100vh-5rem)]">
-      {children}
-    </main>
-  </div>
+  <MobileProvider>
+    <div className="min-h-screen bg-background text-text font-sans selection:bg-primary/30 selection:text-primary">
+      <Sidebar />
+      <Header />
+      <main className="ml-0 lg:ml-64 p-4 lg:p-8 pt-4 min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-5rem)]">
+        {children}
+      </main>
+    </div>
+  </MobileProvider>
 );
 
 function App() {
