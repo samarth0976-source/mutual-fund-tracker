@@ -39,6 +39,32 @@ app.get('/api/test', (req, res) => {
     res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
+// IPO ENDPOINT - Defined early to ensure it works before express.static
+app.get('/api/ipo', async (req, res) => {
+    console.log('📈 IPO endpoint hit');
+    try {
+        // Return mock data first to verify routing works
+        const mockData = {
+            upcoming: [
+                { name: 'Sample IPO 1', issuePrice: 100, gmp: 25, type: 'Mainboard', openDate: '2025-01-15', closeDate: '2025-01-17' }
+            ],
+            ongoing: [
+                { name: 'Test IPO 2', issuePrice: 200, gmp: -10, type: 'SME', openDate: '2025-01-10', closeDate: '2025-01-14' }
+            ],
+            closed: [
+                { name: 'Completed IPO', issuePrice: 150, gmp: 30, listingPrice: 195, listingGain: 30, type: 'Mainboard' }
+            ],
+            lastUpdated: new Date().toISOString(),
+            source: 'mock-data-test'
+        };
+        console.log('📈 Returning IPO mock data');
+        res.json(mockData);
+    } catch (error) {
+        console.error('IPO endpoint error:', error);
+        res.status(500).json({ error: 'Failed to fetch IPO data' });
+    }
+});
+
 // NOTE: Static files are served AFTER all API routes - see end of file
 
 // Cache clear endpoint for debugging
@@ -2582,35 +2608,38 @@ async function scrapeIPOData() {
     }
 }
 
-// GET /api/ipo - Get all IPO data
-app.get('/api/ipo', async (req, res) => {
-    try {
-        const data = await scrapeIPOData();
-        res.json(data);
-    } catch (error) {
-        console.error('IPO endpoint error:', error);
-        res.status(500).json({ error: 'Failed to fetch IPO data' });
-    }
-});
+// IPO routes are now defined EARLY in the file (around line 41) to ensure they work
+// The original routes below are commented out to avoid duplicates:
 
-// GET /api/ipo/:status - Get IPOs by status (upcoming/ongoing/closed)
-app.get('/api/ipo/:status', async (req, res) => {
-    try {
-        const { status } = req.params;
-        if (!['upcoming', 'ongoing', 'closed'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Use: upcoming, ongoing, or closed' });
-        }
+// // GET /api/ipo - Get all IPO data (MOVED TO TOP OF FILE)
+// app.get('/api/ipo', async (req, res) => {
+//     try {
+//         const data = await scrapeIPOData();
+//         res.json(data);
+//     } catch (error) {
+//         console.error('IPO endpoint error:', error);
+//         res.status(500).json({ error: 'Failed to fetch IPO data' });
+//     }
+// });
 
-        const data = await scrapeIPOData();
-        res.json({
-            ipos: data[status] || [],
-            lastUpdated: data.lastUpdated
-        });
-    } catch (error) {
-        console.error('IPO status endpoint error:', error);
-        res.status(500).json({ error: 'Failed to fetch IPO data' });
-    }
-});
+// // GET /api/ipo/:status - Get IPOs by status (upcoming/ongoing/closed)
+// app.get('/api/ipo/:status', async (req, res) => {
+//     try {
+//         const { status } = req.params;
+//         if (!['upcoming', 'ongoing', 'closed'].includes(status)) {
+//             return res.status(400).json({ error: 'Invalid status. Use: upcoming, ongoing, or closed' });
+//         }
+
+//         const data = await scrapeIPOData();
+//         res.json({
+//             ipos: data[status] || [],
+//             lastUpdated: data.lastUpdated
+//         });
+//     } catch (error) {
+//         console.error('IPO status endpoint error:', error);
+//         res.status(500).json({ error: 'Failed to fetch IPO data' });
+//     }
+// });
 
 // Serve static files AFTER all API routes to prevent catching /api/* requests
 app.use(express.static(path.join(__dirname, 'dist')));
