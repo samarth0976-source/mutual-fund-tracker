@@ -424,9 +424,49 @@ const Market = () => {
                         Fund Name ({filteredFunds.length.toLocaleString()} results)
                     </div>
 
-                    {/* Table */}
+                    {/* Table - Desktop / Cards - Mobile */}
                     <div className="bg-surface border border-border rounded-xl overflow-hidden">
-                        <div className="overflow-x-auto">
+                        {/* Mobile Card View */}
+                        <div className="lg:hidden divide-y divide-border">
+                            {loading ? (
+                                [...Array(5)].map((_, i) => (
+                                    <div key={i} className="p-3 animate-pulse">
+                                        <div className="flex gap-3">
+                                            <div className="w-10 h-10 bg-white/10 rounded-lg" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-3 bg-white/10 rounded w-3/4" />
+                                                <div className="h-2 bg-white/10 rounded w-1/2" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : displayFunds.length === 0 ? (
+                                <div className="p-6 text-center text-muted text-sm">No funds found</div>
+                            ) : displayFunds.map((fund) => (
+                                <div
+                                    key={fund.id}
+                                    onClick={() => navigate(`/fund/${fund.id}`)}
+                                    className="p-3 flex items-center gap-3 active:bg-white/5 cursor-pointer"
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm font-bold text-primary border border-primary/20 flex-shrink-0">
+                                        {fund.name.charAt(0)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium text-white truncate">{fund.name}</p>
+                                        <p className="text-[10px] text-muted">{fund.category}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <p className={`text-xs font-bold ${fund.return1y && parseFloat(fund.return1y) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                                            {fund.return1y ? `${parseFloat(fund.return1y) >= 0 ? '+' : ''}${fund.return1y}%` : '--'}
+                                        </p>
+                                        <p className="text-[10px] text-muted">1Y</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden lg:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-white/5 text-muted text-xs uppercase tracking-wider">

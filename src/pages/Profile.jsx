@@ -119,22 +119,22 @@ const Profile = () => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 lg:space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-white mb-2">My Profile</h1>
-                <p className="text-muted">Manage your account settings and preferences</p>
+                <h1 className="text-xl lg:text-3xl font-bold text-white mb-1 lg:mb-2">My Profile</h1>
+                <p className="text-sm lg:text-base text-muted">Manage your account settings</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-8">
                 {/* Profile Card */}
                 <div className="md:col-span-1">
-                    <div className="bg-surface border border-border rounded-2xl p-6 text-center">
-                        <div className="w-32 h-32 mx-auto bg-gradient-to-tr from-primary to-secondary p-[3px] rounded-full mb-4">
+                    <div className="bg-surface border border-border rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center">
+                        <div className="w-20 h-20 lg:w-32 lg:h-32 mx-auto bg-gradient-to-tr from-primary to-secondary p-[2px] lg:p-[3px] rounded-full mb-3 lg:mb-4">
                             <div className="w-full h-full bg-surface rounded-full flex items-center justify-center overflow-hidden">
-                                <User className="w-16 h-16 text-white" />
+                                <User className="w-10 h-10 lg:w-16 lg:h-16 text-white" />
                             </div>
                         </div>
-                        <h2 className="text-xl font-bold text-white mb-1">{user?.username}</h2>
+                        <h2 className="text-lg lg:text-xl font-bold text-white mb-1">{user?.username}</h2>
                         <p className={`text-sm mb-4 font-semibold ${user?.isPro ? 'text-yellow-400' : 'text-muted'}`}>
                             {user?.isPro ? 'Pro Member' : 'Free Member'}
                         </p>
@@ -149,12 +149,12 @@ const Profile = () => {
                 </div>
 
                 {/* Details Section */}
-                <div className="md:col-span-2 space-y-6">
+                <div className="md:col-span-2 space-y-4 lg:space-y-6">
                     {/* Subscription Status */}
                     {user?.isPro && (
-                        <div className="bg-surface border border-border rounded-2xl p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-white">Subscription Status</h3>
+                        <div className="bg-surface border border-border rounded-xl lg:rounded-2xl p-4 lg:p-6">
+                            <div className="flex items-center justify-between mb-3 lg:mb-4">
+                                <h3 className="text-base lg:text-lg font-bold text-white">Subscription</h3>
                                 {user?.isGracePeriod && (
                                     <span className="px-3 py-1 bg-red-500/10 text-red-400 text-xs font-medium rounded-full">
                                         Grace Period

@@ -174,17 +174,17 @@ const FundDetails = () => {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        <div className="space-y-4 lg:space-y-8 animate-in fade-in duration-500">
+            <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors text-sm">
+                <ArrowLeft className="w-4 h-4" /> Back
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-surface border border-border p-6 rounded-2xl">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
+                <div className="lg:col-span-2 space-y-4 lg:space-y-8">
+                    <div className="bg-surface border border-border p-4 lg:p-6 rounded-xl lg:rounded-2xl">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 lg:mb-6 gap-3 lg:gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-white mb-2">{fund.name}</h1>
+                                <h1 className="text-xl lg:text-3xl font-bold text-white mb-1 lg:mb-2">{fund.name}</h1>
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
                                     <span className="px-2 py-1 rounded bg-white/5 border border-border">Equity</span>
                                     <span className="px-2 py-1 rounded bg-white/5 border border-border">Very High Risk</span>
@@ -193,8 +193,8 @@ const FundDetails = () => {
                                 </div>
                             </div>
                             <div className="text-left md:text-right">
-                                <p className="text-sm text-muted mb-1">Current NAV</p>
-                                <h2 className="text-3xl font-bold text-white">₹{fund.nav}</h2>
+                                <p className="text-xs lg:text-sm text-muted mb-1">Current NAV</p>
+                                <h2 className="text-xl lg:text-3xl font-bold text-white">₹{fund.nav}</h2>
                                 <p className={`text-sm font-medium ${parseFloat(fund.returns[selectedPeriod]) >= 0 ? 'text-primary' : 'text-danger'}`}>
                                     {parseFloat(fund.returns[selectedPeriod]) >= 0 ? '+' : ''}{fund.returns[selectedPeriod]}% ({selectedPeriod})
                                 </p>

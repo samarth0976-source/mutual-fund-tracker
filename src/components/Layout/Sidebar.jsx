@@ -73,10 +73,8 @@ const Sidebar = () => {
             `}>
                 <div className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
-                            <TrendingUp className="text-white w-5 h-5" />
-                        </div>
-                        <h1 className="text-xl font-bold tracking-wider text-white">FUND<span className="text-primary">X</span></h1>
+                        <img src="/logo.png" alt="FundX" className="w-8 h-8 lg:w-10 lg:h-10 object-contain" />
+                        <h1 className="text-lg lg:text-xl font-bold tracking-wider text-white">Fund<span className="text-primary">X</span></h1>
                     </div>
 
                     {/* Close button for mobile */}
