@@ -201,7 +201,8 @@ const FundDetails = () => {
                             </div>
                         </div>
 
-                        <div className="h-[350px] w-full mt-8">
+                        {/* Chart - Responsive height */}
+                        <div className="h-[200px] lg:h-[350px] w-full mt-4 lg:mt-8">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
                                     <defs>
@@ -212,9 +213,9 @@ const FundDetails = () => {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                                     <XAxis dataKey="name" stroke="#666" tick={false} axisLine={false} tickLine={false} />
-                                    <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} />
+                                    <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={35} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: '#121212', borderColor: '#333', borderRadius: '8px' }}
+                                        contentStyle={{ backgroundColor: '#121212', borderColor: '#333', borderRadius: '8px', fontSize: '12px' }}
                                         itemStyle={{ color: '#00e676' }}
                                         labelStyle={{ color: '#999' }}
                                         labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate || label}
@@ -225,96 +226,142 @@ const FundDetails = () => {
                             </ResponsiveContainer>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 justify-between mt-6 border-t border-border pt-6">
+                        {/* Period Selector - Responsive */}
+                        <div className="flex flex-wrap gap-1.5 lg:gap-2 justify-between mt-4 lg:mt-6 border-t border-border pt-4 lg:pt-6">
                             {['1W', '1M', '1Y', '3Y', '5Y', 'All'].map((period) => (
-                                <button key={period} onClick={() => setSelectedPeriod(period)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedPeriod === period ? 'bg-primary text-black shadow-[0_0_10px_rgba(0,230,118,0.4)]' : 'text-muted hover:bg-white/5 hover:text-white'}`}>
+                                <button key={period} onClick={() => setSelectedPeriod(period)} className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${selectedPeriod === period ? 'bg-primary text-black shadow-[0_0_10px_rgba(0,230,118,0.4)]' : 'text-muted hover:bg-white/5 hover:text-white'}`}>
                                     {period}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-                        <div className="p-6 border-b border-border flex justify-between items-center">
+                    <div className="bg-surface border border-border rounded-xl lg:rounded-2xl overflow-hidden">
+                        <div className="p-4 lg:p-6 border-b border-border flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
                             <div>
-                                <h3 className="text-xl font-bold text-white">Holdings</h3>
-                                <p className="text-xs text-muted mt-1">
+                                <h3 className="text-base lg:text-xl font-bold text-white">Holdings</h3>
+                                <p className="text-[10px] lg:text-xs text-muted mt-1">
                                     {fund.isRealData && fund.holdings.length > 0 ? (
-                                        <span className="text-primary flex items-center gap-1">✅ Live Data from Groww</span>
+                                        <span className="text-primary flex items-center gap-1">✅ Live Data</span>
                                     ) : fund.holdings.length > 0 ? (
-                                        <span className="text-yellow-500 flex items-center gap-1">⚠️ Holdings data may not be current</span>
+                                        <span className="text-yellow-500 flex items-center gap-1">⚠️ May not be current</span>
                                     ) : (
-                                        <span className="text-gray-400 flex items-center gap-1">📊 Holdings data not available for this fund</span>
+                                        <span className="text-gray-400 flex items-center gap-1">📊 Not available</span>
                                     )}
                                 </p>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 lg:gap-3">
                                 <button
                                     onClick={handleRefreshData}
                                     disabled={refreshing}
-                                    className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 lg:px-4 py-1.5 lg:py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs lg:text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Data'}
+                                    {refreshing ? '🔄...' : '🔄 Refresh'}
                                 </button>
                                 {fund.holdings.length > 0 && (
-                                    <div className="text-xs text-muted text-right">{fund.holdings.length} Companies</div>
+                                    <div className="text-[10px] lg:text-xs text-muted">{fund.holdings.length} stocks</div>
                                 )}
                             </div>
                         </div>
+
                         {fund.holdings.length > 0 ? (
-                            <table className="w-full text-left">
-                                <thead className="bg-white/5 text-muted text-sm">
-                                    <tr>
-                                        <th className="px-6 py-4 font-medium">Stock Name</th>
-                                        <th className="px-6 py-4 font-medium">Sector</th>
-                                        <th className="px-6 py-4 font-medium text-right">Allocation</th>
-                                        <th className="px-6 py-4 font-medium text-right">1M Return</th>
-                                        <th className="px-6 py-4 font-medium text-right">1Y Return</th>
-                                        <th className="px-6 py-4 font-medium text-right">3Y Return</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
+                            <>
+                                {/* Mobile Card View */}
+                                <div className="lg:hidden divide-y divide-border">
                                     {fund.holdings.map((holding, i) => (
-                                        <tr key={i} className="hover:bg-white/5 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-white">
-                                                <Link to={`/stock/${encodeURIComponent(holding.name)}`} className="hover:text-primary hover:underline transition-colors">
-                                                    {holding.name}
-                                                </Link>
-                                            </td>
-                                            <td className="px-6 py-4 text-muted">{holding.sector}</td>
-                                            <td className="px-6 py-4 text-right font-mono text-white">{holding.allocation}%</td>
-                                            <td className="px-6 py-4 text-right font-mono">
-                                                {holding.return1m ? (
-                                                    <span className={parseFloat(holding.return1m) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                        {parseFloat(holding.return1m) >= 0 ? '+' : ''}{holding.return1m}%
-                                                    </span>
-                                                ) : '—'}
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-mono">
-                                                {holding.return1y ? (
-                                                    <span className={parseFloat(holding.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                        {parseFloat(holding.return1y) >= 0 ? '+' : ''}{holding.return1y}%
-                                                    </span>
-                                                ) : '—'}
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-mono">
-                                                {holding.return3y ? (
-                                                    <span className={parseFloat(holding.return3y) >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                        {parseFloat(holding.return3y) >= 0 ? '+' : ''}{holding.return3y}%
-                                                    </span>
-                                                ) : '—'}
-                                            </td>
-                                        </tr>
+                                        <Link
+                                            key={i}
+                                            to={`/stock/${encodeURIComponent(holding.name)}`}
+                                            className="block p-3 active:bg-white/5"
+                                        >
+                                            <div className="flex justify-between items-start gap-2 mb-2">
+                                                <span className="text-xs font-medium text-white flex-1 truncate">{holding.name}</span>
+                                                <span className="text-xs font-mono text-primary flex-shrink-0">{holding.allocation}%</span>
+                                            </div>
+                                            <div className="flex gap-3 text-[10px]">
+                                                <div>
+                                                    <span className="text-muted">1M: </span>
+                                                    {holding.return1m ? (
+                                                        <span className={parseFloat(holding.return1m) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return1m) >= 0 ? '+' : ''}{holding.return1m}%
+                                                        </span>
+                                                    ) : <span className="text-muted">—</span>}
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted">1Y: </span>
+                                                    {holding.return1y ? (
+                                                        <span className={parseFloat(holding.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return1y) >= 0 ? '+' : ''}{holding.return1y}%
+                                                        </span>
+                                                    ) : <span className="text-muted">—</span>}
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted">3Y: </span>
+                                                    {holding.return3y ? (
+                                                        <span className={parseFloat(holding.return3y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return3y) >= 0 ? '+' : ''}{holding.return3y}%
+                                                        </span>
+                                                    ) : <span className="text-muted">—</span>}
+                                                </div>
+                                            </div>
+                                        </Link>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <table className="hidden lg:table w-full text-left">
+                                    <thead className="bg-white/5 text-muted text-sm">
+                                        <tr>
+                                            <th className="px-6 py-4 font-medium">Stock Name</th>
+                                            <th className="px-6 py-4 font-medium">Sector</th>
+                                            <th className="px-6 py-4 font-medium text-right">Allocation</th>
+                                            <th className="px-6 py-4 font-medium text-right">1M Return</th>
+                                            <th className="px-6 py-4 font-medium text-right">1Y Return</th>
+                                            <th className="px-6 py-4 font-medium text-right">3Y Return</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {fund.holdings.map((holding, i) => (
+                                            <tr key={i} className="hover:bg-white/5 transition-colors">
+                                                <td className="px-6 py-4 font-medium text-white">
+                                                    <Link to={`/stock/${encodeURIComponent(holding.name)}`} className="hover:text-primary hover:underline transition-colors">
+                                                        {holding.name}
+                                                    </Link>
+                                                </td>
+                                                <td className="px-6 py-4 text-muted">{holding.sector}</td>
+                                                <td className="px-6 py-4 text-right font-mono text-white">{holding.allocation}%</td>
+                                                <td className="px-6 py-4 text-right font-mono">
+                                                    {holding.return1m ? (
+                                                        <span className={parseFloat(holding.return1m) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return1m) >= 0 ? '+' : ''}{holding.return1m}%
+                                                        </span>
+                                                    ) : '—'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-mono">
+                                                    {holding.return1y ? (
+                                                        <span className={parseFloat(holding.return1y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return1y) >= 0 ? '+' : ''}{holding.return1y}%
+                                                        </span>
+                                                    ) : '—'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-mono">
+                                                    {holding.return3y ? (
+                                                        <span className={parseFloat(holding.return3y) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                            {parseFloat(holding.return3y) >= 0 ? '+' : ''}{holding.return3y}%
+                                                        </span>
+                                                    ) : '—'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </>
                         ) : (
-                            <div className="p-12 text-center">
-                                <div className="text-gray-500 text-4xl mb-4">📋</div>
-                                <h4 className="text-white font-semibold text-lg mb-2">Holdings Data Unavailable</h4>
-                                <p className="text-muted text-sm max-w-md mx-auto">
-                                    Detailed holdings information is not currently available for this fund.
-                                    This may be due to data source limitations. Try refreshing or check back later.
+                            <div className="p-8 lg:p-12 text-center">
+                                <div className="text-gray-500 text-3xl lg:text-4xl mb-3 lg:mb-4">📋</div>
+                                <h4 className="text-white font-semibold text-base lg:text-lg mb-2">Holdings Unavailable</h4>
+                                <p className="text-muted text-xs lg:text-sm max-w-md mx-auto">
+                                    Holdings data not available. Try refreshing.
                                 </p>
                             </div>
                         )}

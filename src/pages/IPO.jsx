@@ -83,18 +83,18 @@ const IPO = () => {
         const isGainPositive = ipo.gmp >= 0;
 
         return (
-            <div className="bg-surface border border-border rounded-2xl p-5 hover:border-primary/50 transition-all duration-300 group">
+            <div className="bg-surface border border-border rounded-xl lg:rounded-2xl p-3 lg:p-5 hover:border-primary/50 transition-all duration-300 group">
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
+                <div className="flex items-start justify-between mb-3 lg:mb-4">
+                    <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-white group-hover:text-primary transition-colors">
+                            <h3 className="text-sm lg:text-lg font-semibold text-white group-hover:text-primary transition-colors truncate">
                                 {ipo.name}
                             </h3>
                             {renderFireRating(ipo.fireRating)}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted">
-                            <span className={`px-2 py-0.5 rounded text-xs ${ipo.type === 'SME' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] lg:text-sm text-muted">
+                            <span className={`px-1.5 lg:px-2 py-0.5 rounded text-[10px] lg:text-xs ${ipo.type === 'SME' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
                                 }`}>
                                 {ipo.type}
                             </span>
@@ -110,10 +110,10 @@ const IPO = () => {
                 </div>
 
                 {/* Price Info Grid */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-background rounded-xl p-3">
-                        <p className="text-xs text-muted mb-1">Issue Price</p>
-                        <p className="text-lg font-bold text-white">
+                <div className="grid grid-cols-3 gap-2 lg:gap-4 mb-3 lg:mb-4">
+                    <div className="bg-background rounded-lg lg:rounded-xl p-2 lg:p-3">
+                        <p className="text-[10px] lg:text-xs text-muted mb-0.5 lg:mb-1">Issue Price</p>
+                        <p className="text-sm lg:text-lg font-bold text-white">
                             {ipo.issuePrice ? `₹${ipo.issuePrice}` : '-'}
                         </p>
                     </div>
@@ -182,21 +182,21 @@ const IPO = () => {
     const currentIPOs = ipoData[activeTab] || [];
 
     return (
-        <div className="min-h-screen ml-64 p-8 bg-background">
+        <div className="space-y-4 lg:space-y-6">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-white" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 lg:mb-8 gap-3">
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">IPO Dashboard</h1>
-                            <p className="text-muted text-sm">
-                                Live GMP & Grey Market Premium
+                            <h1 className="text-xl lg:text-2xl font-bold text-white">IPO Dashboard</h1>
+                            <p className="text-muted text-xs lg:text-sm">
+                                Live GMP
                                 {lastUpdated && (
-                                    <span className="ml-2 text-xs">
-                                        Updated: {new Date(lastUpdated).toLocaleTimeString()}
+                                    <span className="ml-2 text-[10px] lg:text-xs">
+                                        • {new Date(lastUpdated).toLocaleTimeString()}
                                     </span>
                                 )}
                             </p>
@@ -205,7 +205,7 @@ const IPO = () => {
                     <button
                         onClick={fetchIPOData}
                         disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-xl hover:border-primary/50 transition-colors text-muted hover:text-white disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 px-3 lg:px-4 py-2 bg-surface border border-border rounded-xl hover:border-primary/50 transition-colors text-muted hover:text-white disabled:opacity-50 text-sm"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         Refresh

@@ -37,13 +37,11 @@ const Login = () => {
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[100px] animate-pulse delay-1000"></div>
             </div>
 
-            <div className="w-full max-w-md bg-surface/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative z-10">
-                <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_15px_rgba(0,230,118,0.3)]">
-                        <TrendingUp className="w-8 h-8 text-primary" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                    <p className="text-muted">Sign in to continue to FundX</p>
+            <div className="w-full max-w-md bg-surface/50 backdrop-blur-xl border border-white/10 rounded-xl lg:rounded-2xl p-6 lg:p-8 shadow-2xl relative z-10">
+                <div className="text-center mb-6 lg:mb-8">
+                    <img src="/logo.png" alt="FundX" className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 lg:mb-4" />
+                    <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1 lg:mb-2">Welcome Back</h1>
+                    <p className="text-sm lg:text-base text-muted">Sign in to FundX</p>
                 </div>
 
                 {error && (

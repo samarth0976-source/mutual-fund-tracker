@@ -176,20 +176,18 @@ const Watchlist = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen ml-64 p-8 bg-background">
-                <div className="max-w-4xl mx-auto">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-10 w-48 bg-surface rounded-lg"></div>
-                        <div className="h-40 bg-surface rounded-xl"></div>
-                        <div className="h-40 bg-surface rounded-xl"></div>
-                    </div>
+            <div className="space-y-4">
+                <div className="animate-pulse space-y-3 lg:space-y-4">
+                    <div className="h-8 lg:h-10 w-36 lg:w-48 bg-surface rounded-lg"></div>
+                    <div className="h-32 lg:h-40 bg-surface rounded-xl"></div>
+                    <div className="h-32 lg:h-40 bg-surface rounded-xl"></div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen ml-64 p-8 bg-background">
+        <div className="space-y-4 lg:space-y-6">
             {/* Error Toast */}
             {error && (
                 <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg bg-red-500 shadow-lg animate-fade-in">
@@ -199,22 +197,22 @@ const Watchlist = () => {
 
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Bookmark className="w-6 h-6 text-primary" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 lg:mb-8 gap-3">
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Bookmark className="w-5 h-5 lg:w-6 lg:h-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-white">My Watchlists</h1>
-                            <p className="text-muted text-sm">{watchlists.length} watchlist{watchlists.length !== 1 ? 's' : ''}</p>
+                            <h1 className="text-xl lg:text-2xl font-bold text-white">Watchlists</h1>
+                            <p className="text-muted text-xs lg:text-sm">{watchlists.length} list{watchlists.length !== 1 ? 's' : ''}</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-black font-medium rounded-xl hover:bg-primary/90 transition-colors"
+                        className="flex items-center justify-center gap-2 px-3 lg:px-4 py-2 bg-primary text-black text-sm font-medium rounded-xl hover:bg-primary/90 transition-colors w-full sm:w-auto"
                     >
-                        <Plus className="w-5 h-5" />
-                        Create Watchlist
+                        <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                        New Watchlist
                     </button>
                 </div>
 
