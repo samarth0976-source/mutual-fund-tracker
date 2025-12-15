@@ -53,7 +53,7 @@ const Signup = () => {
 
             <div className="w-full max-w-md bg-surface/50 backdrop-blur-xl border border-white/10 rounded-xl lg:rounded-2xl p-6 lg:p-8 shadow-2xl relative z-10">
                 <div className="text-center mb-6 lg:mb-8">
-                    <img src="/logo.png" alt="FundX" className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 lg:mb-4" />
+                    <img src="/logo.png" alt="FundX" className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 lg:mb-4 rounded-xl" />
                     <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1 lg:mb-2">Create Account</h1>
                     <p className="text-sm lg:text-base text-muted">Join FundX to track investments</p>
                 </div>
