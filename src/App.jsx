@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import StockDetails from './pages/StockDetails';
 import Watchlist from './pages/Watchlist';
 import IPO from './pages/IPO';
+import Privacy from './pages/Privacy';
 
 const PlaceholderPage = ({ title }) => (
   <div className="p-4 lg:p-8 text-white">
@@ -160,6 +161,14 @@ function App() {
               <ProtectedRoute>
                 <AuthenticatedLayout>
                   <Refunds />
+                </AuthenticatedLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/privacy" element={
+              <ProtectedRoute>
+                <AuthenticatedLayout>
+                  <Privacy />
                 </AuthenticatedLayout>
               </ProtectedRoute>
             } />

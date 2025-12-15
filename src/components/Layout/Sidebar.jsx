@@ -130,6 +130,13 @@ const Sidebar = () => {
                     >
                         Refunds & Cancellations
                     </NavLink>
+                    <NavLink
+                        to="/privacy"
+                        onClick={handleNavClick}
+                        className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted hover:bg-white/5 hover:text-white transition-all duration-300"
+                    >
+                        Privacy Policy
+                    </NavLink>
                 </div>
 
                 <div className="p-4 border-t border-border">
