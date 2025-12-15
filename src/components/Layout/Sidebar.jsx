@@ -1,6 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut, Bookmark, Flame, X } from 'lucide-react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMobile } from '../../contexts/MobileContext';
 
@@ -71,11 +71,15 @@ const Sidebar = () => {
                 transition-transform duration-300 ease-in-out
                 ${isMobile ? (isDrawerOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
             `}>
-                <div className="p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="FundX" className="w-8 h-8 lg:w-10 lg:h-10 object-contain" />
+                <div className="p-4 lg:p-6 flex items-center justify-between">
+                    <Link
+                        to="/"
+                        onClick={handleNavClick}
+                        className="flex items-center gap-2 lg:gap-3 hover:opacity-80 transition-opacity"
+                    >
+                        <img src="/logo.png" alt="FundX" className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg object-contain" />
                         <h1 className="text-lg lg:text-xl font-bold tracking-wider text-white">Fund<span className="text-primary">X</span></h1>
-                    </div>
+                    </Link>
 
                     {/* Close button for mobile */}
                     {isMobile && (

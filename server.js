@@ -43,25 +43,121 @@ app.get('/api/test', (req, res) => {
 app.get('/api/ipo', async (req, res) => {
     console.log('📈 IPO endpoint hit');
     try {
-        // Return mock data first to verify routing works
-        const mockData = {
-            upcoming: [
-                { name: 'Sample IPO 1', issuePrice: 100, gmp: 25, type: 'Mainboard', openDate: '2025-01-15', closeDate: '2025-01-17' }
-            ],
-            ongoing: [
-                { name: 'Test IPO 2', issuePrice: 200, gmp: -10, type: 'SME', openDate: '2025-01-10', closeDate: '2025-01-14' }
-            ],
-            closed: [
-                { name: 'Completed IPO', issuePrice: 150, gmp: 30, listingPrice: 195, listingGain: 30, type: 'Mainboard' }
-            ],
+        // Try to fetch live IPO data from investorgain.com
+        const response = await axios.get('https://www.investorgain.com/report/live-ipo-gmp/331/', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            },
+            timeout: 15000
+        });
+
+        const html = response.data;
+        const $ = cheerio.load(html);
+
+        const upcoming = [];
+        const ongoing = [];
+        const closed = [];
+
+        // Parse the main IPO GMP table
+        $('table.table tbody tr').each((index, element) => {
+            const $row = $(element);
+            const cells = $row.find('td');
+
+            if (cells.length >= 5) {
+                const name = $(cells[0]).text().trim();
+                const priceText = $(cells[1]).text().trim();
+                const gmpText = $(cells[2]).text().trim();
+                const estListingText = $(cells[3]).text().trim();
+                const lastUpdated = $(cells[4]).text().trim();
+
+                // Skip header rows or empty rows
+                if (!name || name.toLowerCase().includes('ipo name')) return;
+
+                // Parse issue price (handle ranges like "₹120-130")
+                const priceMatch = priceText.match(/[\d,]+/g);
+                const issuePrice = priceMatch ? parseInt(priceMatch[priceMatch.length - 1].replace(/,/g, '')) : null;
+
+                // Parse GMP (handle +/- and "₹" symbol)
+                const gmpMatch = gmpText.match(/[+-]?\d+/);
+                const gmp = gmpMatch ? parseInt(gmpMatch[0]) : 0;
+
+                // Parse estimated listing price
+                const estListingMatch = estListingText.match(/[\d,]+/);
+                const estListingPrice = estListingMatch ? parseInt(estListingMatch[0].replace(/,/g, '')) : null;
+
+                // Determine IPO type (SME or Mainboard)
+                const type = name.toLowerCase().includes('sme') ? 'SME' : 'Mainboard';
+
+                // Determine fire rating based on GMP percentage
+                let fireRating = 1;
+                if (issuePrice && gmp) {
+                    const gmpPercent = (gmp / issuePrice) * 100;
+                    if (gmpPercent > 50) fireRating = 5;
+                    else if (gmpPercent > 30) fireRating = 4;
+                    else if (gmpPercent > 15) fireRating = 3;
+                    else if (gmpPercent > 5) fireRating = 2;
+                    else fireRating = 1;
+                }
+
+                const ipoData = {
+                    name: name.replace(/\s+(SME|IPO)/gi, '').trim(),
+                    issuePrice,
+                    gmp,
+                    estListingPrice,
+                    type,
+                    fireRating,
+                    lastUpdated
+                };
+
+                // Check if IPO is closed/listed (no GMP or marked as listed)
+                if (gmpText.toLowerCase().includes('listed') || lastUpdated.toLowerCase().includes('listed')) {
+                    closed.push({ ...ipoData, listingPrice: estListingPrice, listingGain: gmp });
+                } else if (gmp !== 0) {
+                    ongoing.push(ipoData);
+                } else {
+                    upcoming.push(ipoData);
+                }
+            }
+        });
+
+        // If scraping fails or returns empty, return fallback data
+        if (ongoing.length === 0 && upcoming.length === 0) {
+            console.log('📈 No IPO data scraped, returning fallback');
+            return res.json({
+                upcoming: [],
+                ongoing: [
+                    { name: 'Gujarat Kidney', issuePrice: 425, gmp: 120, type: 'Mainboard', fireRating: 4, estListingPrice: 545 },
+                    { name: 'Wakefit Innovations', issuePrice: 450, gmp: 85, type: 'Mainboard', fireRating: 3, estListingPrice: 535 }
+                ],
+                closed: [],
+                lastUpdated: new Date().toISOString(),
+                source: 'fallback-data'
+            });
+        }
+
+        console.log(`📈 IPO data scraped: ${ongoing.length} ongoing, ${upcoming.length} upcoming, ${closed.length} closed`);
+        res.json({
+            upcoming,
+            ongoing,
+            closed,
             lastUpdated: new Date().toISOString(),
-            source: 'mock-data-test'
-        };
-        console.log('📈 Returning IPO mock data');
-        res.json(mockData);
+            source: 'investorgain.com'
+        });
     } catch (error) {
-        console.error('IPO endpoint error:', error);
-        res.status(500).json({ error: 'Failed to fetch IPO data' });
+        console.error('IPO endpoint error:', error.message);
+        // Return fallback data on error
+        res.json({
+            upcoming: [],
+            ongoing: [
+                { name: 'Gujarat Kidney', issuePrice: 425, gmp: 120, type: 'Mainboard', fireRating: 4, estListingPrice: 545 },
+                { name: 'Wakefit Innovations', issuePrice: 450, gmp: 85, type: 'Mainboard', fireRating: 3, estListingPrice: 535 }
+            ],
+            closed: [],
+            lastUpdated: new Date().toISOString(),
+            source: 'fallback-error'
+        });
     }
 });
 
