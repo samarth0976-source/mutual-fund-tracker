@@ -70,11 +70,11 @@ const MarketIndices = () => {
 
     if (loading) {
         return (
-            <div className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="h-6 w-32 skeleton rounded" />
+            <div className="mb-4 lg:mb-8">
+                <div className="flex items-center gap-2 mb-3 lg:mb-4">
+                    <div className="h-5 lg:h-6 w-24 lg:w-32 skeleton rounded" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 lg:gap-4">
                     {[1, 2, 3, 4, 5, 6].map(i => <SkeletonMarketCard key={i} />)}
                 </div>
             </div>
@@ -82,69 +82,71 @@ const MarketIndices = () => {
     }
 
     return (
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-4 lg:mb-8 animate-fade-in">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20">
-                        <Activity size={20} className="text-primary" />
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+                <div className="flex items-center gap-2 lg:gap-3">
+                    <div className="p-1.5 lg:p-2 rounded-lg lg:rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20">
+                        <Activity size={16} className="text-primary lg:hidden" />
+                        <Activity size={20} className="text-primary hidden lg:block" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-white">Live Market</h2>
-                        <div className="flex items-center gap-3 text-xs text-muted">
+                        <h2 className="text-sm lg:text-lg font-semibold text-white">Live Market</h2>
+                        <div className="flex items-center gap-2 lg:gap-3 text-[10px] lg:text-xs text-muted">
                             <LiveDot />
-                            {lastUpdate && <span>Updated: {lastUpdate}</span>}
+                            {lastUpdate && <span className="hidden sm:inline">Updated: {lastUpdate}</span>}
                         </div>
                     </div>
                 </div>
                 <button
                     onClick={fetchIndices}
                     disabled={refreshing}
-                    className="p-2 hover:bg-card-bg rounded-xl transition-all hover:scale-105 disabled:opacity-50"
+                    className="p-1.5 lg:p-2 hover:bg-card-bg rounded-lg lg:rounded-xl transition-all hover:scale-105 disabled:opacity-50"
                     title="Refresh"
                 >
-                    <RefreshCw size={18} className={`text-muted ${refreshing ? 'animate-spin' : ''}`} />
+                    <RefreshCw size={16} className={`text-muted ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
-            {/* Index Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Index Cards - Compact on Mobile */}
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 lg:gap-4">
                 {indices.map((index, i) => (
                     <div
                         key={i}
                         className={`
-              rounded-xl p-4 border backdrop-blur-sm 
+              rounded-lg lg:rounded-xl p-2 lg:p-4 border backdrop-blur-sm 
               bg-gradient-to-br ${getGradientClass(index.change)}
               transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
               animate-fade-in opacity-0
             `}
                         style={{ animationDelay: `${i * 0.1}s` }}
                     >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-semibold text-white/90">
+                        <div className="flex items-center justify-between mb-1 lg:mb-3">
+                            <span className="text-[10px] lg:text-sm font-semibold text-white/90 truncate">
                                 {index.displayName || index.symbol}
                             </span>
-                            <div className={`p-1.5 rounded-lg ${parseFloat(index.change) >= 0 ? 'bg-success/20' : 'bg-danger/20'}`}>
+                            <div className={`p-1 lg:p-1.5 rounded-md lg:rounded-lg ${parseFloat(index.change) >= 0 ? 'bg-success/20' : 'bg-danger/20'}`}>
                                 {parseFloat(index.change) >= 0 ? (
-                                    <TrendingUp size={14} className="text-success" />
+                                    <TrendingUp size={10} className="text-success lg:hidden" />
                                 ) : (
-                                    <TrendingDown size={14} className="text-danger" />
+                                    <TrendingDown size={10} className="text-danger lg:hidden" />
+                                )}
+                                {parseFloat(index.change) >= 0 ? (
+                                    <TrendingUp size={14} className="text-success hidden lg:block" />
+                                ) : (
+                                    <TrendingDown size={14} className="text-danger hidden lg:block" />
                                 )}
                             </div>
                         </div>
 
-                        <div className="text-2xl font-bold text-white mb-2">
+                        <div className="text-sm lg:text-2xl font-bold text-white mb-0.5 lg:mb-2">
                             {index.isError ? '---' : formatNumber(index.ltp)}
                         </div>
 
-                        <div className={`text-sm font-semibold ${getChangeClass(index.change)}`}>
+                        <div className={`text-[10px] lg:text-sm font-semibold ${getChangeClass(index.change)}`}>
                             {index.isError ? '---' : (
                                 <>
-                                    {parseFloat(index.change) >= 0 ? '+' : ''}
-                                    {formatNumber(index.change)}
-                                    <span className="ml-1 opacity-80">
-                                        ({parseFloat(index.perChange) >= 0 ? '+' : ''}{parseFloat(index.perChange).toFixed(2)}%)
-                                    </span>
+                                    {parseFloat(index.perChange) >= 0 ? '+' : ''}{parseFloat(index.perChange).toFixed(2)}%
                                 </>
                             )}
                         </div>

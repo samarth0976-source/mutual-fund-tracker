@@ -368,17 +368,18 @@ const FundDetails = () => {
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="bg-surface border border-border p-6 rounded-2xl">
-                        <h3 className="text-lg font-bold text-white mb-4">Fund Performance</h3>
-                        <div className="space-y-4">
+                <div className="space-y-3 lg:space-y-6">
+                    {/* Fund Performance - Compact on Mobile */}
+                    <div className="bg-surface border border-border p-3 lg:p-6 rounded-xl lg:rounded-2xl">
+                        <h3 className="text-sm lg:text-lg font-bold text-white mb-2 lg:mb-4">Fund Performance</h3>
+                        <div className="space-y-2 lg:space-y-4">
                             {Object.entries(fund.returns).map(([period, value]) => {
                                 const numValue = parseFloat(value);
                                 const isPositive = numValue >= 0;
                                 return (
                                     <div key={period} className="flex items-center justify-between">
-                                        <span className="text-muted">{period} Return</span>
-                                        <span className={`font-mono font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                        <span className="text-xs lg:text-base text-muted">{period}</span>
+                                        <span className={`font-mono text-xs lg:text-base font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                                             {isPositive ? '+' : ''}{numValue.toFixed(2)}%
                                         </span>
                                     </div>
@@ -387,31 +388,32 @@ const FundDetails = () => {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 p-6 rounded-2xl">
-                        <h3 className="text-lg font-bold text-white mb-2">Invest Now</h3>
-                        <p className="text-sm text-muted mb-4">Start SIP or invest lump sum in this fund.</p>
-                        <button className="w-full py-3 bg-primary text-black font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(0,230,118,0.3)]">
+                    {/* Invest Now - Compact on Mobile */}
+                    <div className="bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 p-3 lg:p-6 rounded-xl lg:rounded-2xl">
+                        <h3 className="text-sm lg:text-lg font-bold text-white mb-1 lg:mb-2">Invest Now</h3>
+                        <p className="text-[10px] lg:text-sm text-muted mb-2 lg:mb-4">Start SIP or lump sum</p>
+                        <button className="w-full py-2 lg:py-3 bg-primary text-black text-sm lg:text-base font-bold rounded-lg lg:rounded-xl hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(0,230,118,0.3)]">
                             Start SIP
                         </button>
-                        <button className="w-full py-3 mt-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors">
-                            One-time Investment
+                        <button className="w-full py-2 lg:py-3 mt-2 lg:mt-3 bg-white/10 text-white text-sm lg:text-base font-bold rounded-lg lg:rounded-xl hover:bg-white/20 transition-colors">
+                            One-time
                         </button>
                     </div>
 
-                    {/* Ask FundX AI Section */}
-                    <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 p-6 rounded-2xl">
-                        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                            <span className="text-2xl">🤖</span>
-                            Ask FundX AI
+                    {/* Ask FundX AI - Compact on Mobile */}
+                    <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 p-3 lg:p-6 rounded-xl lg:rounded-2xl">
+                        <h3 className="text-sm lg:text-lg font-bold text-white mb-1 lg:mb-2 flex items-center gap-1 lg:gap-2">
+                            <span className="text-lg lg:text-2xl">🤖</span>
+                            FundX AI
                         </h3>
-                        <p className="text-sm text-muted mb-4">
-                            Get AI-powered insights and analysis for this fund.
+                        <p className="text-[10px] lg:text-sm text-muted mb-2 lg:mb-4">
+                            Get AI insights for this fund
                         </p>
                         <button
                             onClick={handleAIAnalysis}
-                            className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)]"
+                            className="w-full py-2 lg:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm lg:text-base font-bold rounded-lg lg:rounded-xl hover:from-purple-500 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)]"
                         >
-                            Analyze with AI
+                            Analyze
                         </button>
                     </div>
                 </div>

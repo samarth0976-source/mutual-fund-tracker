@@ -120,9 +120,9 @@ const ETFTracker = ({ compact = false }) => {
 
     if (loading) {
         return (
-            <div className="bg-card-bg/50 rounded-2xl p-6 border border-border">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="h-6 w-32 skeleton rounded" />
+            <div className="bg-card-bg/50 rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-border">
+                <div className="flex items-center justify-between mb-3 lg:mb-4">
+                    <div className="h-5 lg:h-6 w-24 lg:w-32 skeleton rounded" />
                 </div>
                 <SkeletonList count={compact ? 4 : 8} />
             </div>
@@ -130,28 +130,29 @@ const ETFTracker = ({ compact = false }) => {
     }
 
     return (
-        <div className="bg-card-bg/50 rounded-2xl p-6 border border-border animate-fade-in">
+        <div className="bg-card-bg/50 rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-border animate-fade-in">
             {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-accent/20 to-primary/20 border border-accent/20">
-                        <BarChart3 size={20} className="text-accent" />
+            <div className="flex items-center justify-between mb-3 lg:mb-5">
+                <div className="flex items-center gap-2 lg:gap-3">
+                    <div className="p-1.5 lg:p-2 rounded-lg lg:rounded-xl bg-gradient-to-br from-accent/20 to-primary/20 border border-accent/20">
+                        <BarChart3 size={16} className="text-accent lg:hidden" />
+                        <BarChart3 size={20} className="text-accent hidden lg:block" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-white">ETF Tracker</h3>
-                        <div className="flex items-center gap-3 text-xs text-muted">
+                        <h3 className="text-sm lg:text-lg font-semibold text-white">ETF Tracker</h3>
+                        <div className="flex items-center gap-2 lg:gap-3 text-[10px] lg:text-xs text-muted">
                             <LiveDot />
-                            {lastUpdate && <span>Updated: {lastUpdate}</span>}
+                            {lastUpdate && <span className="hidden sm:inline">Updated: {lastUpdate}</span>}
                         </div>
                     </div>
                 </div>
                 <button
                     onClick={fetchETFPrices}
                     disabled={refreshing}
-                    className="p-2 hover:bg-surface rounded-xl transition-all hover:scale-105 disabled:opacity-50"
+                    className="p-1.5 lg:p-2 hover:bg-surface rounded-lg lg:rounded-xl transition-all hover:scale-105 disabled:opacity-50"
                     title="Refresh"
                 >
-                    <RefreshCw size={18} className={`text-muted ${refreshing ? 'animate-spin' : ''}`} />
+                    <RefreshCw size={16} className={`text-muted ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
@@ -198,23 +199,23 @@ const ETFTracker = ({ compact = false }) => {
                     displayETFs.map((etf, index) => (
                         <div
                             key={etf.symbol}
-                            className="flex items-center justify-between p-3 rounded-xl bg-surface/50 hover:bg-surface transition-all duration-200 border border-transparent hover:border-border group animate-fade-in opacity-0"
+                            className="flex items-center justify-between p-2 lg:p-3 rounded-lg lg:rounded-xl bg-surface/50 hover:bg-surface transition-all duration-200 border border-transparent hover:border-border group animate-fade-in opacity-0"
                             style={{ animationDelay: `${index * 0.05}s` }}
                         >
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-semibold text-white group-hover:text-primary transition-colors">
+                                <div className="flex items-center gap-1.5 lg:gap-2 flex-wrap">
+                                    <span className="text-xs lg:text-sm font-semibold text-white group-hover:text-primary transition-colors">
                                         {etf.symbol}
                                     </span>
-                                    <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
+                                    <span className="text-[10px] lg:text-xs px-1.5 lg:px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
                                         {etf.type}
                                     </span>
                                 </div>
-                                <p className="text-xs text-muted truncate mt-0.5">
+                                <p className="text-[10px] lg:text-xs text-muted truncate mt-0.5">
                                     {etf.name}
                                 </p>
                                 {!compact && (
-                                    <div className="flex gap-3 mt-1 text-xs text-muted">
+                                    <div className="hidden lg:flex gap-3 mt-1 text-xs text-muted">
                                         <span>AUM: ₹{etf.aum}</span>
                                         <span>Expense: {etf.expense}</span>
                                     </div>

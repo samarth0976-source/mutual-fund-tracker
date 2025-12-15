@@ -19,7 +19,7 @@ const CollectionIcon = ({ type }) => {
     return icons[type] || <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6" />;
 };
 
-// Fund card component - Mobile optimized
+// Fund card component - Mobile compact
 const FundCard = ({ fund, onClick }) => {
     const return3Y = fund.returns?.['1Y'] || fund.return1y || '0.00';
     const isPositive = parseFloat(return3Y) >= 0;
@@ -27,23 +27,23 @@ const FundCard = ({ fund, onClick }) => {
     return (
         <div
             onClick={onClick}
-            className="min-w-[160px] lg:min-w-[200px] bg-surface border border-border rounded-xl p-3 lg:p-4 cursor-pointer hover:border-primary/50 transition-all group"
+            className="min-w-[130px] lg:min-w-[200px] bg-surface border border-border rounded-lg lg:rounded-xl p-2.5 lg:p-4 cursor-pointer hover:border-primary/50 transition-all group"
         >
-            <div className="flex items-start gap-2 lg:gap-3 mb-3 lg:mb-4">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm lg:text-lg font-bold text-primary border border-primary/20">
+            <div className="flex items-start gap-2 mb-2 lg:mb-4">
+                <div className="w-7 h-7 lg:w-10 lg:h-10 rounded-md lg:rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xs lg:text-lg font-bold text-primary border border-primary/20 flex-shrink-0">
                     {fund.name?.charAt(0) || 'F'}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white text-xs lg:text-sm truncate group-hover:text-primary transition-colors">
-                        {fund.name?.replace(/Direct.*$/i, '').trim() || 'Fund Name'}
+                    <p className="font-medium text-white text-[10px] lg:text-sm leading-tight truncate group-hover:text-primary transition-colors">
+                        {fund.name?.replace(/Direct.*$/i, '').replace(/Mutual Fund/i, '').trim() || 'Fund'}
                     </p>
                 </div>
             </div>
             <div className="flex items-center justify-between">
-                <span className={`text-base lg:text-lg font-bold ${isPositive ? 'text-primary' : 'text-red-500'}`}>
+                <span className={`text-sm lg:text-lg font-bold ${isPositive ? 'text-primary' : 'text-red-500'}`}>
                     {isPositive ? '+' : ''}{return3Y}%
                 </span>
-                <span className="text-[10px] lg:text-xs text-muted">3Y</span>
+                <span className="text-[9px] lg:text-xs text-muted">1Y</span>
             </div>
         </div>
     );
