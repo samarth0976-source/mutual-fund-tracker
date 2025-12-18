@@ -1,14 +1,16 @@
-import React from 'react';
-import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut, Bookmark, Flame, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, PieChart, TrendingUp, BarChart3, Settings, LogOut, Bookmark, Flame, X, Smartphone } from 'lucide-react';
 import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMobile } from '../../contexts/MobileContext';
+import AppDownload from '../AppDownload';
 
 const Sidebar = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const { isMobile, isDrawerOpen, closeDrawer } = useMobile();
+    const [showAppDownload, setShowAppDownload] = useState(false);
 
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/', exact: true },
@@ -143,7 +145,22 @@ const Sidebar = () => {
                     </NavLink>
                 </div>
 
-                <div className="p-4 border-t border-border">
+                {/* Get App & Logout */}
+                <div className="p-4 border-t border-border space-y-2">
+                    {/* Get App Button */}
+                    <button
+                        onClick={() => {
+                            setShowAppDownload(true);
+                            closeDrawer();
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 text-primary hover:from-primary/20 hover:to-secondary/20 transition-all duration-300 group"
+                    >
+                        <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium">Get the App</span>
+                        <span className="ml-auto text-xs bg-primary/20 px-2 py-0.5 rounded-full">New</span>
+                    </button>
+
+                    {/* Logout Button */}
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-muted hover:bg-danger/10 hover:text-danger transition-all duration-300"
@@ -153,6 +170,11 @@ const Sidebar = () => {
                     </button>
                 </div>
             </aside>
+
+            {/* App Download Modal */}
+            {showAppDownload && (
+                <AppDownload onClose={() => setShowAppDownload(false)} />
+            )}
         </>
     );
 };
